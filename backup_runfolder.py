@@ -22,7 +22,8 @@ def log_setup(args):
     """Set up script logging object.
     Logs are written to STDERR and appended to a logfile, named after the input runfolder.
     Create loggers by assigning logging.getLogger('<name>') objects. Call using desired log level
-    as method.
+    as method. Formatter objects define the format of the log string, while Handler objects dictate
+    where the log is recorded. See the 'logging' module docs in the standard library for detail.
 
     Logs can be written with different levels, in order of event severity: DEBUG, INFO, WARNING, ERROR,
     CRITICAL. Each has a corresponding method that can be used to log events at that level of severity.
