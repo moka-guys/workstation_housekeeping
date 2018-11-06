@@ -76,11 +76,14 @@ def cli_arguments(args):
     """
     # Define arguments.
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--runfolder', required=True, help='An Illumina runfolder direcory', type=os.path.normpath)
+    # The runfolder string argument is immediately passed to os.path.expanduser using the *type* argument, and this
+    # value is contained as the .runfolder() method in the object returned by parser.parser_args().
+    # Os.path.expanduser allows expands tilde signs (~) to a string containing the user home directory.
+    parser.add_argument('-i', '--runfolder', required=True, help='An Illumina runfolder direcory', type=os.path.expanduser)
     parser.add_argument('-a', '--auth', required=True, help='A DNAnexus authorisation key for the upload agent')
     parser.add_argument('--ignore', default="/L00", help="Comma-separated string. Regular expressions for files to ignore.")
     parser.add_argument('-p', '--project', default=None, help='The name of an existing DNAnexus project for the given runfolder')
-    parser.add_argument('--logpath', help='A directory to write the logfile to')
+    parser.add_argument('--logpath', help='A directory to write the logfile to', type=os.path.expanduser)
     parser.add_argument('--version', action='version', version='%(prog)s v1.0')
     # Collect arguments and return
     return parser.parse_args(args)
