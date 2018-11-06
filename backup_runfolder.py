@@ -223,7 +223,9 @@ class UAcaller():
             # Create DNAnexus upload command
             nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder /{nexus_folder} --do-not-compress --upload-threads 10 --tries 100 -v "{file}"'.format(
                 auth_token=self.auth_token, nexus_project=self.project, nexus_folder=nexus_folder, file=input_file))
-            self.logger.info(nexus_upload_command)
+            # Mask the autentication key in the upload command and log
+            masked_nexus_upload_command = nexus_upload_command.replace(self.auth_token,"")
+            self.logger.info(masked_nexus_upload_command)
             # Call upload command redirecting stderr to stdout
             proc = subprocess.Popen([nexus_upload_command], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
             # Capture output streams (err is redirected to out above)
