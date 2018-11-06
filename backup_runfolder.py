@@ -20,14 +20,21 @@ from logging.config import dictConfig
 
 def log_setup(args):
     """Set up script logging object.
-
     Logs are written to STDERR and appended to a logfile, named after the input runfolder.
-    Create loggers by assigning logging.getLogger(<name>) objects. Call using desired log level
+    Create loggers by assigning logging.getLogger('<name>') objects. Call using desired log level
     as method.
 
-    Example:
-        logger = logging.getLogger('log')
-        logger.info('Info string')
+    Logs can be written with different levels, in order of event severity: DEBUG, INFO, WARNING, ERROR,
+    CRITICAL. Each has a corresponding method that can be used to log events at that level of severity.
+    Logs are written by passing a string to one of these methods (see example below). Additionally,
+    the logger.exception() method writes a log at level ERROR and raises an exception to exit the program.
+  
+    An example of the logging protocol:
+        # Create logging object. This can be performed anywhere in the script once config created.
+        logger = logging.getLogger('backup_runfolder')
+        # Write to log with level 'INFO'
+        logger.info('Searching for executables...')
+    >>> 2018-11-06 10:11:30,071 backup_runfolder INFO - Searching for executables...
     """
     # If logfile path passed to --logpath, prepend to logfile name, else write to current directory
     logpath = args.logpath if args.logpath else ""
