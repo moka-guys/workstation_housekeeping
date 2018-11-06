@@ -51,12 +51,12 @@ def log_setup(args):
     # from which all future loggers in the module, initiated with logging.getLogger, will inherit. 
     logging_config = dict(
         version=1,
-        formatters={'f': {'format': "{asctime} {name} {levelname} - {message}", 'style': '{'}},
+        formatters={'log_formatter': {'format': "{asctime} {name} {levelname} - {message}", 'style': '{'}},
         handlers={
-            'sh': {'class': 'logging.StreamHandler', 'formatter': 'f', 'level': logging.DEBUG},
-            'fh': {'class': 'logging.FileHandler', 'formatter': 'f', 'level': logging.DEBUG,
+            'stream_handler': {'class': 'logging.StreamHandler', 'formatter': 'log_formatter', 'level': logging.DEBUG},
+            'file_handler': {'class': 'logging.FileHandler', 'formatter': 'log_formatter', 'level': logging.DEBUG,
                    'filename': os.path.join(logpath, logfile_name)}},
-        root={'handlers': ['fh', 'sh'], 'level': logging.DEBUG}
+        root={'handlers': ['file_handler', 'stream_handler'], 'level': logging.DEBUG}
         )
 
     # Read the logging config and initaite root logger for the script.
