@@ -83,7 +83,7 @@ def cli_arguments(args):
     parser.add_argument('--ignore', default="/L00", help="Comma-separated string. Regular expressions for files to ignore.")
     # Note: When no project is given to the -p argument below, this script searches for a project in DNAnexus. See UAcaller.find_nexus_project() for details.
     parser.add_argument('-p', '--project', default=None, help='The name of an existing DNAnexus project for the given runfolder')
-    parser.add_argument('--logpath', help='A directory to write the logfile to', type=os.path.expanduser)
+    parser.add_argument('--logpath', help='Logfile output directory', type=os.path.expanduser)
     # Collect arguments and return
     return parser.parse_args(args)
 
