@@ -43,8 +43,12 @@ def log_setup(args):
     logfile_name = "".join([os.path.basename(args.runfolder), ".log"])
     logfile_fullpath = os.path.join(logpath, logfile_name)
 
-    # Create dictionary with logging config parameters. A file handler writes to the log file, while
-    # a stream handler writes to the terminal.
+    # Create dictionary with logging config parameters.
+    # Loggers can be configured explicitly through code, config files, or the dictConfig module. Here,
+    # a dictionary is created to define a logger the writes messages to both the terminal (logging.StreamHandler,
+    # which writes to STDERR) and a logfile (logging.FileHandler, set to 'runfoldername.log', prefxied with
+    # a path if --logpath given at the command line). These parameters are added to a root logger, 
+    # from which all future loggers in the module, initiated with logging.getLogger, will inherit. 
     logging_config = dict(
         version=1,
         formatters={'f': {'format': "{asctime} {name} {levelname} - {message}", 'style': '{'}},
@@ -55,12 +59,10 @@ def log_setup(args):
         root={'handlers': ['fh', 'sh'], 'level': logging.DEBUG}
         )
 
-    # Read config and initaite root module logger. All objects created with logging.getLogger()
-    #  inherit the config from this.
+    # Read the logging config and initaite root logger for the script.
     dictConfig(logging_config)
-    logger = logging.getLogger(__name__)
-    # Log the start of the script
-    logger.info('START. Logging to %s', logfile_fullpath)
+    # Log the beginning of the script with the root logger.
+    logging.info('START. Logging to %s', logfile_fullpath)
 
 def cli_arguments(args):
     """Parses command line arguments.
