@@ -69,7 +69,7 @@ def cli_arguments(args):
     Args:
         args: A list containing the expected commandline arguments. Example:
             ['backup_runfolder.py', '-i', 'media/data1/share/180216_M02353_0185_000000000-D357Y/', '-a',
-             'AUTH_KEY', '-p', '003_180924_TrioPipelineGATK', '--ignore', '.txt']
+             'AUTH_TOKEN', '-p', '003_180924_TrioPipelineGATK', '--ignore', '.txt']
     Returns:
         An argparse.parser object with methods named after long-option command-line arguments. Example:
             --runfolder "media/data1/share/runfolder" --> parser.parse_args(args).runfolder
@@ -79,8 +79,8 @@ def cli_arguments(args):
     # The runfolder string argument is immediately passed to os.path.expanduser using the *type* argument, and this
     # value is contained as the .runfolder() method in the object returned by parser.parser_args().
     # Os.path.expanduser allows expands tilde signs (~) to a string containing the user home directory.
-    parser.add_argument('-i', '--runfolder', required=True, help='An Illumina runfolder direcory', type=os.path.expanduser)
-    parser.add_argument('-a', '--auth', required=True, help='A DNAnexus authorisation key for the upload agent')
+    parser.add_argument('-i', '--runfolder', required=True, help='An Illumina runfolder directory', type=os.path.expanduser)
+    parser.add_argument('-a', '--auth-token', help='A DNAnexus authorisation key for the upload agent', default='~/.dnanexus_auth_token', type=os.path.expanduser)
     parser.add_argument('--ignore', default="/L00", help="Comma-separated string. Regular expressions for files to ignore.")
     parser.add_argument('-p', '--project', default=None, help='The name of an existing DNAnexus project for the given runfolder')
     parser.add_argument('--logpath', help='A directory to write the logfile to', type=os.path.expanduser)
@@ -88,12 +88,25 @@ def cli_arguments(args):
     # Collect arguments and return
     return parser.parse_args(args)
 
+def read_auth_token(key_input):
+    """Return the DNAnexus authentication toxen from the first line of an input file or an input string.
+    Args:
+        key_file_string: A file or string containing a DNAnexus authentication key."""
+    # Attempt to read the auth key from the first line of the input, assuming it is a file
+    try:
+        with open(key_input, "r") as infile:
+            auth_token = infile.readlines()[0].strip()
+    # If the file does not exist, use the input auth key as provided
+    except FileNotFoundError:
+        auth_token = key_input.strip()
+    return auth_token
+
 def find_executables(programs):
     """Check programs (input arguments) exist in system path.
     Args:
         programs - A list of executeable program names
     """
-    logger = logging.getLogger('backup_runfolder')
+    logger = logging.getLogger('backup_runfolder.find_executables')
     # all() returns True if all items in a list evaluate True. Used here to raise error if any calls
     # to find_exectuable() fail.
     if not all([find_executable(program) for program in programs]):
@@ -107,7 +120,7 @@ class UAcaller():
         runfolder: Runfolder path as given on command line
         runfolder_name: The name of the runfolder without parent directories
         runfolder_directory: The runfolder parent directories
-        api_key: DNAnexus api key. Passed as string argument to the script.
+        auth_token: DNAnexus api key. Passed as string argument to the script.
         project: DNAnexus project corresponding to the input runfolder
         ignore: A comma-separated string of regular expressions. Used to skip files for upload.
         logger: Class-level logger object
@@ -118,7 +131,7 @@ class UAcaller():
         call_upload_agent(): Calls the DNAnexus upload agent using the class attributes
 
     """
-    def __init__(self, runfolder, api_key, project, ignore):
+    def __init__(self, runfolder, auth_token, project, ignore):
         self.logger = logging.getLogger('backup_runfolder.UAcaller')
 
         # Set runfolder directory path strings
@@ -130,7 +143,7 @@ class UAcaller():
         self.runfolder_directory = os.path.dirname(self.runfolder)
 
         # Set DNAnexus API key
-        self.api_key = api_key
+        self.auth_token = auth_token
         # Set DNAnexus project. If no project given, search DNAnexus for a project matching the runfolder name.
         self.project = self.find_nexus_project(project)
         # Set list of regular expressions to exclude files from upload
@@ -209,8 +222,8 @@ class UAcaller():
             self.logger.info('Calling upload agent on %s to location %s:%s', input_file, self.project, nexus_path_full)
 
             # Create DNAnexus upload command
-            nexus_upload_command = ('ua --auth-token {api_key} --project {nexus_project} --folder /{nexus_folder} --do-not-compress --upload-threads 10 --tries 100 -v "{file}"'.format(
-                api_key=self.api_key, nexus_project=self.project, nexus_folder=nexus_folder, file=input_file))
+            nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder /{nexus_folder} --do-not-compress --upload-threads 10 --tries 100 -v "{file}"'.format(
+                auth_token=self.auth_token, nexus_project=self.project, nexus_folder=nexus_folder, file=input_file))
             self.logger.info(nexus_upload_command)
             # Call upload command redirecting stderr to stdout
             proc = subprocess.Popen([nexus_upload_command], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
@@ -233,9 +246,13 @@ def main(args):
     logger.info('Searching for executables...')
     find_executables(['ua', 'dx'])
 
+    # Read the authentication token from the input file or string using the read_auth_token() function
+    logger.info('Reading authentication token...')
+    parsed_token = read_auth_token(parsed_args.auth_token)
+
     # Create an object to set up the upload agent command
     logger.info('Creating UAcaller object with the following arguments: %s', vars(parsed_args))
-    ua = UAcaller(runfolder=parsed_args.runfolder, project=parsed_args.project, api_key=parsed_args.auth, ignore=parsed_args.ignore)
+    ua = UAcaller(runfolder=parsed_args.runfolder, project=parsed_args.project, auth_token=parsed_token, ignore=parsed_args.ignore)
     # Call upload agent on runfolder
     logger.info('Arguments read to object. Calling upload agent for input files.')
     ua.call_upload_agent()
