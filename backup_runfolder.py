@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""backup_runfolder v1.0
+"""backup_runfolder
 
 Uploads an Illumina runfolder to DNANexus.
 
 Example:
     usage: backup_runfolder.py [-h] -i RUNFOLDER -a AUTH [--ignore IGNORE] [-p PROJECT] 
-                               [--logpath LOGPATH] [--version]
+                               [--logpath LOGPATH]
 """
 
 import argparse
@@ -50,12 +50,12 @@ def log_setup(args):
     # a path if --logpath given at the command line). These parameters are added to a root logger, 
     # from which all future loggers in the module, initiated with logging.getLogger, will inherit. 
     logging_config = dict(
-        version=1,
-        formatters={'log_formatter': {'format': "{asctime} {name} {levelname} - {message}", 'style': '{'}},
+        version=1.0,
+        formatters={'log_formatter': {'format': "{asctime} {name} {version} {levelname} - {message}", 'style': '{'}},
         handlers={
             'stream_handler': {'class': 'logging.StreamHandler', 'formatter': 'log_formatter', 'level': logging.DEBUG},
             'file_handler': {'class': 'logging.FileHandler', 'formatter': 'log_formatter', 'level': logging.DEBUG,
-                   'filename': os.path.join(logpath, logfile_name)}},
+                             'filename': os.path.join(logpath, logfile_name)}},
         root={'handlers': ['file_handler', 'stream_handler'], 'level': logging.DEBUG}
         )
 
@@ -82,9 +82,9 @@ def cli_arguments(args):
     parser.add_argument('-i', '--runfolder', required=True, help='An Illumina runfolder directory', type=os.path.expanduser)
     parser.add_argument('-a', '--auth-token', help='A DNAnexus authorisation key for the upload agent', default='~/.dnanexus_auth_token', type=os.path.expanduser)
     parser.add_argument('--ignore', default="/L00", help="Comma-separated string. Regular expressions for files to ignore.")
+    # Note: When no project is given to the -p argument below, this script searches for a project in DNAnexus. See UAcaller.find_nexus_project() for details.
     parser.add_argument('-p', '--project', default=None, help='The name of an existing DNAnexus project for the given runfolder')
     parser.add_argument('--logpath', help='A directory to write the logfile to', type=os.path.expanduser)
-    parser.add_argument('--version', action='version', version='%(prog)s v1.0')
     # Collect arguments and return
     return parser.parse_args(args)
 
