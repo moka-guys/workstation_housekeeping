@@ -4,7 +4,7 @@
 Uploads an Illumina runfolder to DNANexus.
 
 Example:
-    usage: backup_runfolder.py [-h] -i RUNFOLDER -a AUTH [--ignore IGNORE] [-p PROJECT] 
+    usage: backup_runfolder.py [-h] -i RUNFOLDER -a AUTH [--ignore IGNORE] [-p PROJECT]
                                [--logpath LOGPATH]
 """
 
@@ -27,9 +27,8 @@ def log_setup(args):
 
     Logs can be written with different levels, in order of event severity: DEBUG, INFO, WARNING, ERROR,
     CRITICAL. Each has a corresponding method that can be used to log events at that level of severity.
-    Logs are written by passing a string to one of these methods (see example below). Additionally,
-    the logger.exception() method writes a log at level ERROR and raises an exception to exit the program.
-  
+    Logs are written by passing a string to one of these methods (see example below).
+
     An example of the logging protocol:
         # Create logging object. This can be performed anywhere in the script once config created.
         logger = logging.getLogger('backup_runfolder')
@@ -47,8 +46,8 @@ def log_setup(args):
     # Loggers can be configured explicitly through code, config files, or the dictConfig module. Here,
     # a dictionary is created to define a logger the writes messages to both the terminal (logging.StreamHandler,
     # which writes to STDERR) and a logfile (logging.FileHandler, set to 'runfoldername.log', prefxied with
-    # a path if --logpath given at the command line). These parameters are added to a root logger, 
-    # from which all future loggers in the module, initiated with logging.getLogger, will inherit. 
+    # a path if --logpath given at the command line). These parameters are added to a root logger,
+    # from which all future loggers in the module, initiated with logging.getLogger, will inherit.
     logging_config = dict(
         version=1.0,
         formatters={'log_formatter': {'format': "{asctime} {name} {version} {levelname} - {message}", 'style': '{'}},
@@ -88,27 +87,15 @@ def cli_arguments(args):
     # Collect arguments and return
     return parser.parse_args(args)
 
-def read_auth_token(key_input):
-    """Return the DNAnexus authentication toxen from the first line of an input file or an input string.
-    Args:
-        key_file_string: A file or string containing a DNAnexus authentication key."""
-    # Attempt to read the auth key from the first line of the input, assuming it is a file
-    try:
-        with open(key_input, "r") as infile:
-            auth_token = infile.readlines()[0].strip()
-    # If the file does not exist, use the input auth key as provided
-    except FileNotFoundError:
-        auth_token = key_input.strip()
-    return auth_token
-
 def find_executables(programs):
     """Check programs (input arguments) exist in system path.
     Args:
-        programs - A list of executeable program names
+        programs - A list of executeable program names. E.g. ['dx','ua'] - these are commands that
+            would execute on the command line.
     """
     logger = logging.getLogger('backup_runfolder.find_executables')
     # all() returns True if all items in a list evaluate True. Used here to raise error if any calls
-    # to find_exectuable() fail.
+    # to find_executable() fail. This function parses the directories in the PATH variable.
     if not all([find_executable(program) for program in programs]):
         logger.exception('Could not find one of the following programs: %s', programs)
     else:
@@ -119,8 +106,7 @@ class UAcaller():
     Attributes:
         runfolder: Runfolder path as given on command line
         runfolder_name: The name of the runfolder without parent directories
-        runfolder_directory: The runfolder parent directories
-        auth_token: DNAnexus api key. Passed as string argument to the script.
+        auth_token: DNAnexus api key. Passed as string or filename argument.
         project: DNAnexus project corresponding to the input runfolder
         ignore: A comma-separated string of regular expressions. Used to skip files for upload.
         logger: Class-level logger object
@@ -129,26 +115,40 @@ class UAcaller():
         find_nexus_project(project): Searches DNAnexus for a project matching the input. If the
            input argument is 'None', searches for the first project matching self.runfolder.
         call_upload_agent(): Calls the DNAnexus upload agent using the class attributes
-
     """
     def __init__(self, runfolder, auth_token, project, ignore):
+        # Initiate class-lvel logging object. All subsequent calls to self.logger will as per any
+        # pre-configured logging module objects.
         self.logger = logging.getLogger('backup_runfolder.UAcaller')
 
         # Set runfolder directory path strings
+        # Get the full (absolute) path of the input runfolder with os.path.abspath
         self.runfolder = os.path.abspath(runfolder)
         # Check runfolder exists
         if not os.path.isdir(self.runfolder):
             raise IOError('Invalid runfolder given as input')
         self.runfolder_name = os.path.basename(self.runfolder)
-        self.runfolder_directory = os.path.dirname(self.runfolder)
 
-        # Set DNAnexus API key
-        self.auth_token = auth_token
+        # Set DNAnexus authentication token from input
+        self.auth_token = self.read_auth_token(auth_token)
         # Set DNAnexus project. If no project given, search DNAnexus for a project matching the runfolder name.
         self.project = self.find_nexus_project(project)
         # Set list of regular expressions to exclude files from upload
         self.ignore = ignore
 
+    def read_auth_token(self, key_input):
+        """Return the DNAnexus authentication toxen from the first line of an input file or an input string.
+        Args:
+            key_file_string: A file or string containing a DNAnexus authentication key."""
+        self.logger.info('Reading authentication token...')
+        # Attempt to read the auth key from the first line of the input, assuming it is a file
+        try:
+            with open(key_input, "r") as infile:
+                auth_token = infile.readlines()[0].strip()
+        # If the file does not exist, use the input auth key as provided
+        except FileNotFoundError:
+            auth_token = key_input.strip()
+        return auth_token
 
     def find_nexus_project(self, project):
         """Search DNAnexus for the project given as an input argument. If the input is 'None',
@@ -156,9 +156,11 @@ class UAcaller():
         Args:
             project: The name of a project on DNAnexus. If None, searches using runfolder name.
         """
-        self.logger.info('Searching for DNAnexus projects')
-        # Get list of projects from DNAnexus as a string
-        projects = subprocess.check_output(['dx', 'find', 'projects'])
+        self.logger.info('Searching for DNAnexus project...')
+        # Get list of projects from DNAnexus as a string. Due to python3's default use of bytestrings
+        # from various modules, bytes.decode() must be called to return the output as a pyton str object.
+        # This is required for pattern matching with the re module.
+        projects = subprocess.check_output(['dx', 'find', 'projects']).decode()
 
         # Set the regular expression pattern for asserting that the project exists in DNAnexus.
         # The bytes() function is required to create bytestrings
@@ -170,20 +172,17 @@ class UAcaller():
         # Else, search for the exact project name passed to the function
             pattern = r'({})'.format(project)
 
-        try:
-        # Search the list of projects for the pattern.
-        #   - The bytes() function is used to encode the search pattern as a bytestring, the required
-        # input to re.search in python3.
-        #   - re.search().group(1) returns the first captured item in the search. The parenthesis in
-        # the search pattern string determines what is captured.
-        #   - bytes.decode() returns the bytestring to a regular string.
-            project_found = re.search(bytes(pattern, 'utf-8'), projects).group(1).decode()
-            self.logger.info('Found project %s matching runfolder %s', project_found, self.runfolder_name)
-            return project_found
-        except AttributeError:
-        # Raise an error if no project can be found in DNAnexus
-            self.logger.exception('No DNAnexus project matches runfolder. See regular expression: %s', pattern) # TODO: TEST
-            raise
+        # List all strings captured by the regular expression pattern defined to match the project
+        project_matches = re.findall(pattern, projects)
+
+        # If only one project is found, return this value
+        if len(project_matches) == 1:
+            return project_matches[0]
+        # Else if any other number of matching projects is foud, log this event and raise an Error
+        else:
+            self.logger.error('DNAnexus project matches were %s for pattern: %s. \
+                Repeat script by giving explicit project to -p/--project flag', project_matches, pattern)
+            raise ValueError
 
     def call_upload_agent(self):
         """Call the DNAnexus upload agent using the class attributes."""
@@ -246,16 +245,12 @@ def main(args):
     logger.info('Searching for executables...')
     find_executables(['ua', 'dx'])
 
-    # Read the authentication token from the input file or string using the read_auth_token() function
-    logger.info('Reading authentication token...')
-    parsed_token = read_auth_token(parsed_args.auth_token)
-
     # Create an object to set up the upload agent command
     logger.info('Creating UAcaller object with the following arguments: %s', vars(parsed_args))
-    ua = UAcaller(runfolder=parsed_args.runfolder, project=parsed_args.project, auth_token=parsed_token, ignore=parsed_args.ignore)
+    ua_object = UAcaller(runfolder=parsed_args.runfolder, project=parsed_args.project, auth_token=parsed_args.auth_token, ignore=parsed_args.ignore)
     # Call upload agent on runfolder
     logger.info('Arguments read to object. Calling upload agent for input files.')
-    ua.call_upload_agent()
+    ua_object.call_upload_agent()
 
     logger.info('END.')
 
