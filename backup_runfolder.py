@@ -183,8 +183,8 @@ class UAcaller():
         # Else if any other number of matching projects is foud, log this event and raise an Error
         else:
             self.logger.error('DNAnexus projects found: %s', project_matches)
-            self.logger.error('%s matching DNAnexus projects were found for pattern: %s. \
-                Repeat script by giving explicit project to -p/--project flag', len(project_matches), pattern)
+            self.logger.error('%s matching DNAnexus projects were found for pattern: %s. '\
+                'Repeat script by giving explicit project to -p/--project flag', len(project_matches), pattern)
             raise ValueError('Invalid DNAnexus project name. 0 or >1 matching projects found.')
 
     def get_nexus_filepath(self, input_file):
