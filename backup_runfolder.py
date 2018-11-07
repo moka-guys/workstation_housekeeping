@@ -195,8 +195,8 @@ class UAcaller():
         Returns:
             A tuple: (DNAnexus upload folder path, full DNAneuxs file path)
         Example:
-            self.get_nexus_filepath('input')
-            >>> ()
+            self.get_nexus_filepath('/media/data1/share/runfolder/RTALogs/logfile.tsv')
+            >>> (runfolder/RTALogs, PROJECT:/runfolder/RTALogs/logfile.tsv)
         """
         # Clean the runfolder name (and prefixes) from the input file path. Features of the regular expression below:
         #    {} - Replaced with the runfolder name by call to str.format(self.runfolder)
@@ -207,7 +207,8 @@ class UAcaller():
         nexus_path_full = os.path.join(self.project[4:], clean_runfolder_path)
         # Remove the filename extension
         nexus_folder = os.path.dirname(nexus_path_full)
-        return nexus_folder, nexus_path_full
+        # Return the nexus folder and full project filepath
+        return nexus_folder, "{}:/{}".format(self.project, nexus_path_full)
 
     def call_upload_agent(self):
         """Call the DNAnexus upload agent using the class attributes."""
@@ -235,8 +236,8 @@ class UAcaller():
 
         # Iterate over filtered files in runfolder
         for input_file in upload_files:
-            nexus_folder, nexus_path_full = self.get_nexus_filepath(input_file)
-            self.logger.info('Calling upload agent on %s to location %s:%s', input_file, self.project, nexus_path_full)
+            nexus_folder, project_filepath = self.get_nexus_filepath(input_file)
+            self.logger.info('Calling upload agent on %s to location %s:%s', input_file, self.project, project_filepath)
 
             # Create DNAnexus upload command
             nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder /{nexus_folder} --do-not-compress --upload-threads 10 --tries 100 -v "{file}"'.format(
