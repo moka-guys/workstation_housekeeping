@@ -95,7 +95,8 @@ def find_executables(programs):
     """
     logger = logging.getLogger('backup_runfolder.find_executables')
     # all() returns True if all items in a list evaluate True. Used here to raise error if any calls
-    # to find_executable() fail. This function parses the directories in the PATH variable.
+    # to find_executable() fail. This function uses the distutils.spawn.find_executable package to
+    # assert the programs are callable by parsing the directories in the system PATH variable (i.e. bash `which` command).
     if not all([find_executable(program) for program in programs]):
         logger.exception('Could not find one of the following programs: %s', programs)
     else:
@@ -117,8 +118,8 @@ class UAcaller():
         call_upload_agent(): Calls the DNAnexus upload agent using the class attributes
     """
     def __init__(self, runfolder, auth_token, project, ignore):
-        # Initiate class-lvel logging object. All subsequent calls to self.logger will as per any
-        # pre-configured logging module objects.
+        # Initiate class-lvel logging object. This object inherits from any root loggers defined using
+        # the python logging module. All subsequent calls to self.logger will log as per the root configuration.
         self.logger = logging.getLogger('backup_runfolder.UAcaller')
 
         # Set runfolder directory path strings
@@ -129,7 +130,8 @@ class UAcaller():
             raise IOError('Invalid runfolder given as input')
         self.runfolder_name = os.path.basename(self.runfolder)
 
-        # Set DNAnexus authentication token from input
+        # Set DNAnexus authentication token from input. This function will distinguish between a file or
+        # string provided as an argument. If not provided, the crednetials file in the home directory is used.
         self.auth_token = self.read_auth_token(auth_token)
         # Set DNAnexus project. If no project given, search DNAnexus for a project matching the runfolder name.
         self.project = self.find_nexus_project(project)
@@ -180,9 +182,32 @@ class UAcaller():
             return project_matches[0]
         # Else if any other number of matching projects is foud, log this event and raise an Error
         else:
-            self.logger.error('DNAnexus project matches were %s for pattern: %s. \
+            self.logger.error('%s matching DNAnexus projects were found for pattern: %s. \
                 Repeat script by giving explicit project to -p/--project flag', project_matches, pattern)
-            raise ValueError
+            raise ValueError('Invalid DNAnexus project name. 0 or >1 matching projects found.')
+
+    def get_nexus_filepath(self, input_file):
+        """Get the DNAneuxs project directory path from a local runfolder input file path. This is required
+        to replicate the local directory structure for the file being uploaded in the DNAnexus project. 
+        The output of this function is passed to the upload agent --folder flag.
+        Args:
+            input_file - The full path of a local runfolder file to be uploaded to DNAnexus.
+        Returns:
+            A tuple: (DNAnexus upload folder path, full DNAneuxs file path)
+        Example:
+            self.get_nexus_filepath('input')
+            >>> ()
+        """
+        # Clean the runfolder name (and prefixes) from the input file path. Features of the regular expression below:
+        #    {} - Replaced with the runfolder name by call to str.format(self.runfolder)
+        #    [\/] - Looks a forward or backward slash in this position, accounting for linux or windows filesystems
+        #    (.*)$ - Capture all characters to the end of the line. 
+        clean_runfolder_path = re.search(r'{}[\/](.*)$'.format(self.runfolder), input_file).group(1)
+        # Prepend the nexus folder path. This is the project name without the first four characters.
+        nexus_path_full = os.path.join(self.project[4:], clean_runfolder_path)
+        # Remove the filename extension
+        nexus_folder = os.path.dirname(nexus_path_full)
+        return nexus_folder, nexus_path_full
 
     def call_upload_agent(self):
         """Call the DNAnexus upload agent using the class attributes."""
@@ -210,21 +235,14 @@ class UAcaller():
 
         # Iterate over filtered files in runfolder
         for input_file in upload_files:
-            # Set nexus folder path. The upload agent requires the exact directory path to be passed
-            # to the --folder flag:
-            # Cleaning the runfolder name (and prefixes) from the input file path
-            clean_runfolder_path = re.search(r'{}[\/](.*)$'.format(self.runfolder), input_file).group(1)
-            # Prepend the nexus folder path. This is the project name without the first four characters.
-            nexus_path_full = os.path.join(self.project[4:], clean_runfolder_path)
-            # Remove the filename extension
-            nexus_folder = os.path.dirname(nexus_path_full)
+            nexus_folder, nexus_path_full = self.get_nexus_filepath(input_file)
             self.logger.info('Calling upload agent on %s to location %s:%s', input_file, self.project, nexus_path_full)
 
             # Create DNAnexus upload command
             nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder /{nexus_folder} --do-not-compress --upload-threads 10 --tries 100 -v "{file}"'.format(
                 auth_token=self.auth_token, nexus_project=self.project, nexus_folder=nexus_folder, file=input_file))
             # Mask the autentication key in the upload command and log
-            masked_nexus_upload_command = nexus_upload_command.replace(self.auth_token,"")
+            masked_nexus_upload_command = nexus_upload_command.replace(self.auth_token, "")
             self.logger.info(masked_nexus_upload_command)
             # Call upload command redirecting stderr to stdout
             proc = subprocess.Popen([nexus_upload_command], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
