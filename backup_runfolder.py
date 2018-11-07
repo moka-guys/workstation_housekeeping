@@ -182,13 +182,14 @@ class UAcaller():
             return project_matches[0]
         # Else if any other number of matching projects is foud, log this event and raise an Error
         else:
+            self.logger.error('DNAnexus projects found: %s', project_matches)
             self.logger.error('%s matching DNAnexus projects were found for pattern: %s. \
-                Repeat script by giving explicit project to -p/--project flag', project_matches, pattern)
+                Repeat script by giving explicit project to -p/--project flag', len(project_matches), pattern)
             raise ValueError('Invalid DNAnexus project name. 0 or >1 matching projects found.')
 
     def get_nexus_filepath(self, input_file):
         """Get the DNAneuxs project directory path from a local runfolder input file path. This is required
-        to replicate the local directory structure for the file being uploaded in the DNAnexus project. 
+        to replicate the local directory structure for the file being uploaded in the DNAnexus project.
         The output of this function is passed to the upload agent --folder flag.
         Args:
             input_file - The full path of a local runfolder file to be uploaded to DNAnexus.
@@ -201,9 +202,10 @@ class UAcaller():
         # Clean the runfolder name (and prefixes) from the input file path. Features of the regular expression below:
         #    {} - Replaced with the runfolder name by call to str.format(self.runfolder)
         #    [\/] - Looks a forward or backward slash in this position, accounting for linux or windows filesystems
-        #    (.*)$ - Capture all characters to the end of the line. 
+        #    (.*)$ - Capture all characters to the end of the line.
+        #    Parentheses in regular expressions capture a group, the first of which can be returned from re.search().group(1)
         clean_runfolder_path = re.search(r'{}[\/](.*)$'.format(self.runfolder), input_file).group(1)
-        # Prepend the nexus folder path. This is the project name without the first four characters.
+        # Prepend the nexus folder path. This is the project name without the first four characters (002).
         nexus_path_full = os.path.join(self.project[4:], clean_runfolder_path)
         # Remove the filename extension
         nexus_folder = os.path.dirname(nexus_path_full)
