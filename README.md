@@ -1,6 +1,8 @@
 # Workstation Housekeeping
 Scripts to manage data on the NGS workstation
 
+---
+
 ## backup_runfolder.py v1.0
 Uploads an Illumina runfolder to DNANexus.
 
@@ -19,3 +21,16 @@ This tool requires the DNAnexus utilities `ua` (upload agent) and `dx` (DNAnexus
 * From a list of files in the runfolder, files matching any of the comma-separated strings passed to `--ignore` are removed. The default is '/L00', which ignores BCL files in directories with this prefix. To upload all files in a runfolder, pass the argument `--ignore ""`.
 * Finally, each remaining file is passed to the DNAnexus `ua` utility. This will attempt an upload if the files are not found in the expected location in the DNAnexus project. The number of upload tries is set to 100 with the `--tries` flag.
 * Logs from this and the script are written to STDERR and a logfile, named after the runfolder. A destination for this file can be passed to the `--logpath` flag.
+
+---
+
+## findfastqs.sh
+Report the number of gzipped fastq files in an Illumina runfolder.
+
+### Usage
+```
+$ findfastqs.sh RUNFOLDER
+>>> RUNFOLDER has 156 demultiplexed fastq files with 2 undetermined. Total: 158
+```
+
+---
