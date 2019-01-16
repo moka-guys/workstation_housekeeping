@@ -213,10 +213,10 @@ class UAcaller():
             clean_runfolder_path = re.search(r'{}[\/](.*)$'.format(self.runfolder), folder_path).group(1)
             
         # Prepend the nexus folder path to cleaned path. the nexus folder path is the project name without the first four characters (002_).
-        nexus_path = os.path.join(self.project[4:],clean_runfolder_path)
+        nexus_path = "'/" + os.path.join(self.project[4:],clean_runfolder_path) + "'"
         
         # Return the nexus folder and full project filepath
-        return nexus_path, "{}:/{}".format(self.project, nexus_path)
+        return nexus_path, "{}:{}".format(self.project, nexus_path)
 
     def call_upload_agent(self):
         """
@@ -291,10 +291,10 @@ class UAcaller():
                 # the upload agent command can take multiple files seperated by a space. the full file path is required for each file
                 files_string = ""
                 for file in file_dict[path]:
-                    files_string = files_string + " " + os.path.join(path, file)
+                    files_string = files_string + " '" + os.path.join(path, file) + "'"
 
                 # Create DNAnexus upload command
-                nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder /{nexus_folder} --do-not-compress --upload-threads 10 --tries 100 {files}'.format(
+                nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder {nexus_folder} --do-not-compress --upload-threads 10 --tries 100 {files}'.format(
                     auth_token=self.auth_token, nexus_project=self.project, nexus_folder=nexus_path, files=files_string))
 
                 # Mask the autentication key in the upload command and log
