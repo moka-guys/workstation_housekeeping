@@ -14,6 +14,7 @@ import os
 import sys
 import subprocess
 from distutils.spawn import find_executable
+import math
 
 import logging
 from logging.config import dictConfig
@@ -288,24 +289,44 @@ class UAcaller():
                 # create the nexus path for each dir
                 nexus_path, project_filepath = self.get_nexus_filepath(path)
                 self.logger.info('Calling upload agent on %s to location %s', path, project_filepath)
-                # the upload agent command can take multiple files seperated by a space. the full file path is required for each file
-                files_string = ""
-                for file in file_dict[path]:
-                    files_string = files_string + " '" + os.path.join(path, file) + "'"
+                # upload agent has a max number of uploads of 1000 per command
+                # count number of files in list and divide by 1000 - eg 20/1000 = 0.02. ceil rounds up to the nearest integer (0.02->1). If there are 1000, ceil(1000/1000)=1
+                iterations_needed = math.ceil(len(file_dict[path]) / 1000.0)
+                # set the iterations count to 1
+                iteration_count = 1
+                # will pass a slice of the file list to the upload agent so set variables for start and stop so it uploads files 0-999
+                start = 0
+                stop = 1000
+                # while we haven't finished the iterations
+                while iteration_count <= iterations_needed:
+                    # if it's the last iteration, set stop == length of list so not to ask for elements that aren't in the list  (if 4 items in list len(list)=4 and slice of 0:4 won't miss the last element)
+                    if iteration_count == iterations_needed:
+                        stop = len(file_dict[path])
+                    self.logger.info('uploading files %d to %d', start, stop)
+                    # the upload agent command can take multiple files seperated by a space. the full file path is required for each file
+                    files_string = ""
+                    # take a slice of list using from and to
+                    for file in file_dict[path][start:stop]:
+                        files_string = files_string + " '" + os.path.join(path, file) + "'"
+                    
+                    # increase the iteration_count and start and stop by 1000 for the next iteration so second iteration will do files 1000-1999 
+                    iteration_count += 1
+                    start += 1000
+                    stop += 1000
 
-                # Create DNAnexus upload command
-                nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder {nexus_folder} --do-not-compress --upload-threads 10 --tries 100 {files}'.format(
-                    auth_token=self.auth_token, nexus_project=self.project, nexus_folder=nexus_path, files=files_string))
+                    # Create DNAnexus upload command
+                    nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder {nexus_folder} --do-not-compress --upload-threads 10 --tries 100 {files}'.format(
+                        auth_token=self.auth_token, nexus_project=self.project, nexus_folder=nexus_path, files=files_string))
 
-                # Mask the autentication key in the upload command and log
-                masked_nexus_upload_command = nexus_upload_command.replace(self.auth_token, "")
-                self.logger.info(masked_nexus_upload_command)
-                # Call upload command redirecting stderr to stdout
-                proc = subprocess.Popen([nexus_upload_command], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
-                # Capture output streams (err is redirected to out above)
-                (out, err) = proc.communicate()
-                # Write output stream to logfile and terminal
-                self.logger.debug(out.decode())
+                    # Mask the autentication key in the upload command and log
+                    masked_nexus_upload_command = nexus_upload_command.replace(self.auth_token, "")
+                    self.logger.info(masked_nexus_upload_command)
+                    # Call upload command redirecting stderr to stdout
+                    proc = subprocess.Popen([nexus_upload_command], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
+                    # Capture output streams (err is redirected to out above)
+                    (out, err) = proc.communicate()
+                    # Write output stream to logfile and terminal
+                    self.logger.debug(out.decode())
 
 
 def main(args):
