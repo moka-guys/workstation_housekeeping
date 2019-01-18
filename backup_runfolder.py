@@ -290,7 +290,7 @@ class UAcaller():
                 nexus_path, project_filepath = self.get_nexus_filepath(path)
                 self.logger.info('Calling upload agent on %s to location %s', path, project_filepath)
                 # upload agent has a max number of uploads of 1000 per command
-                # count number of files in list and divide by 1000.0 eg 20/1000.0 = 0.02 (need to make the denominator this a float as 1200/1000 = 1 but 1200/1000.0 = 1.2) . ceil rounds up to the nearest integer (0.02->1). If there are 1000, ceil(1000/1000.0)=1
+                # count number of files in list and divide by 1000.0 eg 20/1000.0 = 0.02. ceil rounds up to the nearest integer (0.02->1). If there are 1000, ceil(1000/1000.0)=1.0
                 iterations_needed = math.ceil(len(file_dict[path]) / 1000.0)
                 # set the iterations count to 1
                 iteration_count = 1
