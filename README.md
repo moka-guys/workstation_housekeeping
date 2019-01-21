@@ -19,7 +19,7 @@ This tool requires the DNAnexus utilities `ua` (upload agent) and `dx` (DNAnexus
 * The script parses the input parameters, asserting that the given runfolder exists.
 * If the `-p` option is given, the script attempts to find a matching DNAnexus project. Otherwise, it looks for a single project matching the runfolder name. If more or less than 1 project matches, the script logs an error and exits.
 * The runfolder is traversed and a list of files in each folder is obtained. If any comma-separated strings passed to the `--ignore` argument are present within the filepath, or filename the file is excluded.
-* Finally, the list of files in each folder is passed to the DNAnexus `ua` utility. This will attempt to upload all files in a folder in a single command. The number of upload tries is set to 100 with the `--tries` flag.
+* Finally, the list of files in each folder is passed to the DNAnexus `ua` utility. It is quicker to upload multiple files per command so 500 files are uploaded per command (upload agent can do 1000 files per command, but this can breach bash/subprocess's max command length). The number of upload tries is set to 100 with the `--tries` flag.
 * Logs from this and the script are written to a logfile, named after the runfolder. A destination for this file can be passed to the `--logpath` flag.
 
 ---
