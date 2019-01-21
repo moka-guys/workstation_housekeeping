@@ -290,13 +290,13 @@ class UAcaller():
                 nexus_path, project_filepath = self.get_nexus_filepath(path)
                 self.logger.info('Calling upload agent on %s to location %s', path, project_filepath)
                 # upload agent has a max number of uploads of 1000 per command
-                # count number of files in list and divide by 1000.0 eg 20/1000.0 = 0.02. ceil rounds up to the nearest integer (0.02->1). If there are 1000, ceil(1000/1000.0)=1.0
-                iterations_needed = math.ceil(len(file_dict[path]) / 1000.0)
+                # count number of files in list and divide by 500.0 eg 20/500.0 = 0.04. ceil rounds up to the nearest integer (0.02->1). If there are 500, ceil(500/500.0)=1.0
+                iterations_needed = math.ceil(len(file_dict[path]) / 500.0)
                 # set the iterations count to 1
                 iteration_count = 1
                 # will pass a slice of the file list to the upload agent so set variables for start and stop so it uploads files 0-999
                 start = 0
-                stop = 1000
+                stop = 500
                 # while we haven't finished the iterations
                 while iteration_count <= iterations_needed:
                     # if it's the last iteration, set stop == length of list so not to ask for elements that aren't in the list  (if 4 items in list len(list)=4 and slice of 0:4 won't miss the last element)
@@ -311,8 +311,8 @@ class UAcaller():
                     
                     # increase the iteration_count and start and stop by 1000 for the next iteration so second iteration will do files 1000-1999 
                     iteration_count += 1
-                    start += 1000
-                    stop += 1000
+                    start += 500
+                    stop += 500
 
                     # Create DNAnexus upload command
                     nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder {nexus_folder} --do-not-compress --upload-threads 10 --tries 100 {files}'.format(
