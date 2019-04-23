@@ -165,8 +165,8 @@ class UAcaller():
         # Get list of projects from DNAnexus as a string. Due to python3's default use of bytestrings
         # from various modules, bytes.decode() must be called to return the output as a pyton str object.
         # This is required for pattern matching with the re module.
-        projects = subprocess.check_output(['dx', 'find', 'projects']).decode()
-
+        projects = subprocess.check_output(['dx', 'find', 'projects', '--auth',self.auth_token]).decode()
+        print(projects)
         # Set the regular expression pattern for asserting that the project exists in DNAnexus.
         # The bytes() function is required to create bytestrings
         if project is None:
