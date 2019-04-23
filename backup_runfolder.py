@@ -218,7 +218,7 @@ class UAcaller():
         nexus_path = "'/" + os.path.join(self.project[4:],clean_runfolder_path) + "'"
         
         # Return the nexus folder and full project filepath
-        return nexus_path, "{}:{}".format(self.project, nexus_path)
+        return nexus_path, f"{self.project}:{nexus_path}"
     
     def ignore_file(self,filepath):
         # if an ignore pattern was specified
