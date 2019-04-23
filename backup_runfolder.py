@@ -218,8 +218,9 @@ class UAcaller():
         nexus_path = "'/" + os.path.join(self.project[4:],clean_runfolder_path) + "'"
         
         # Return the nexus folder and full project filepath
-        return nexus_path, f"{self.project}:{nexus_path}"
-    
+        return nexus_path, "{}:{}".format(self.project, nexus_path)
+
+        
     def ignore_file(self,filepath):
         # if an ignore pattern was specified
         if self.ignore:
@@ -256,6 +257,19 @@ class UAcaller():
                     if not self.ignore_file(filepath):
                         # if ignore pattern not found add filepath to list
                         file_dict[folderpath].append(filepath)
+            # repeat for the root (not just subfolders)
+            # build path to the folder
+            folderpath = os.path.join(root)
+            # create a dictionary entry for this folder
+            file_dict[folderpath] = []
+            # create a list of filepaths for all files in the folder
+            filepath_list = [os.path.join(folderpath,file) for file in os.listdir(folderpath) if os.path.isfile(os.path.join(folderpath, file))]
+            # loop through this list
+            for filepath in filepath_list:
+                # test filepath for ignore patterns
+                if not self.ignore_file(filepath):
+                    # if ignore pattern not found add filepath to list
+                    file_dict[folderpath].append(filepath)
     
         # report the folders and files to be uploaded
         self.logger.info('Files for upload: %s', file_dict)
@@ -306,6 +320,49 @@ class UAcaller():
                     # Write output stream to logfile and terminal
                     self.logger.debug(out.decode())
 
+    def count_uploaded_files(self):
+        # count number of files to be uploaded 
+        # if ignore terms given need to add a grep step 
+        if self.ignore:
+            # -v excludes any files matching the given terms (stated with -e)
+            # -i makes this search case insensitive
+            grep_ignore =  "| grep -v -i "
+            # split ignore string on comma and loop through list
+            for pattern in self.ignore.split(","):
+                grep_ignore = grep_ignore + ' -e "' + pattern + '" '
+        else:
+            grep_ignore =  ""
+        
+        local_file_count = "find " + self.runfolder + " -type f " + grep_ignore + " | wc -l"
+        print (local_file_count)
+        # Call upload command redirecting stderr to stdout
+        proc = subprocess.Popen([local_file_count], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
+        # Capture output streams (err is redirected to out above)
+        (out, err) = proc.communicate()
+        # Write output stream to logfile and terminal
+        self.logger.info('%s files to be uploaded (excluding any with ignore terms in filename or path)', out.decode().rstrip())
+
+        # count number of uploaded files
+        uploaded_file_count = "dx find data --project %s | wc -l" % (self.project)
+        print(uploaded_file_count)
+        # Call upload command redirecting stderr to stdout
+        proc = subprocess.Popen([uploaded_file_count], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
+        # Capture output streams (err is redirected to out above)
+        (out, err) = proc.communicate()
+        # Write output stream to logfile and terminal
+        self.logger.info('%s files present in project', out.decode().rstrip())
+        
+        if self.ignore:
+            # test for presense of any ignore strings in project
+            uploaded_file_count_ignore = "dx find data --project %s " % (self.project) + grep_ignore.replace("-v","") + " | wc -l" 
+            print (uploaded_file_count_ignore)
+            # Call upload command redirecting stderr to stdout
+            proc = subprocess.Popen([uploaded_file_count_ignore], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
+            # Capture output streams (err is redirected to out above)
+            (out, err) = proc.communicate()
+            # Write output stream to logfile and terminal
+            self.logger.info('%s files present in project containing one of the ignore terms. NB this may not be accurate if the ignore term is found in the result of dx find data (eg present in project name)', out.decode().rstrip())
+
 
 def main(args):
     """Uploads runfolder to DNAnexus by passing given arguments to the DNAnexus upload agent."""
@@ -323,9 +380,14 @@ def main(args):
     # Create an object to set up the upload agent command
     logger.info('Creating UAcaller object with the following arguments: %s', vars(parsed_args))
     ua_object = UAcaller(runfolder=parsed_args.runfolder, project=parsed_args.project, auth_token=parsed_args.auth_token, ignore=parsed_args.ignore)
+    
     # Call upload agent on runfolder
     logger.info('Arguments read to object. Calling upload agent for input files.')
     ua_object.call_upload_agent()
+    
+    # run tests to count files
+    logger.info('Counting the number of files that need to be uploaded, have been uploaded and check if any that should have been ignored are in Nexus.')
+    ua_object.count_uploaded_files()
 
     logger.info('END.')
 
