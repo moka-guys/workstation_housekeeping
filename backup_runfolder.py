@@ -6,6 +6,7 @@ Uploads an Illumina runfolder to DNANexus.
 Example:
     usage: backup_runfolder.py [-h] -i RUNFOLDER -a AUTH [--ignore IGNORE] [-p PROJECT]
                                [--logpath LOGPATH]
+    where IGNORE is a comma seperated string of terms which prevents the upload of files if that term is present in the filename or filepath.
 """
 
 import argparse
@@ -80,8 +81,8 @@ def cli_arguments(args):
     # value is contained as the .runfolder() method in the object returned by parser.parser_args().
     # Os.path.expanduser allows expands tilde signs (~) to a string containing the user home directory.
     parser.add_argument('-i', '--runfolder', required=True, help='An Illumina runfolder directory', type=os.path.expanduser)
-    parser.add_argument('-a', '--auth-token', help='A DNAnexus authorisation key for the upload agent', default='~/.dnanexus_auth_token', type=os.path.expanduser)
-    parser.add_argument('--ignore', default=None, help="Comma-separated string. Regular expressions for files to ignore.")
+    parser.add_argument('-a', '--auth-token', help='A string or file containing a DNAnexus authorisation key used to access the DNANexus project. Default = ~/.dnanexus_auth_token', default='~/.dnanexus_auth_token', type=os.path.expanduser)
+    parser.add_argument('--ignore', default=None, help="Comma-separated list of patterns which prevents the file from being uploaded if any pattern is present in filename or filepath.")
     # Note: When no project is given to the -p argument below, this script searches for a project in DNAnexus. See UAcaller.find_nexus_project() for details.
     parser.add_argument('-p', '--project', default=None, help='The name of an existing DNAnexus project for the given runfolder')
     parser.add_argument('--logpath', help='Logfile output directory', type=os.path.expanduser)
@@ -136,8 +137,9 @@ class UAcaller():
         self.auth_token = self.read_auth_token(auth_token)
         # Set DNAnexus project. If no project given, search DNAnexus for a project matching the runfolder name.
         self.project = self.find_nexus_project(project)
-        # Set list of regular expressions to exclude files from upload
+        # List of patterns to exclude files from upload
         self.ignore = ignore
+
 
     def read_auth_token(self, key_input):
         """Return the DNAnexus authentication toxen from the first line of an input file or an input string.
@@ -218,6 +220,19 @@ class UAcaller():
         
         # Return the nexus folder and full project filepath
         return nexus_path, "{}:{}".format(self.project, nexus_path)
+    
+    def ignore_file(self,filepath):
+        # if an ignore pattern was specified
+        if self.ignore:
+            # split this string on comma and loop through list
+            for pattern in self.ignore.split(","):
+                # make ignore pattern and filepath upper case and search filepath for the pattern
+                if pattern.upper() in filepath.upper(): 
+                    # if present return True to indicate the file should not be uploaded
+                    return True
+        # if no search patterns given, or pattern not found in filepath return False to say file can be uploaded
+        return False
+        
 
     def call_upload_agent(self):
         """
@@ -231,72 +246,36 @@ class UAcaller():
             # for any subfolders
             for folder in subfolders:
                 # build path to the folder
-                path = os.path.join(root, folder)
-                # for some reason if a folder is empty the files list contains the list of files from the previous dirctory
-                # therefore create a list of all the files in this subfolder
-                file_list = [file for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
-                upload_files = []
-                # if any ignore terms given
-                if self.ignore:
-                    # check if any of the ignore terms are present in the folder path
-                    if not any([re.search(pattern, path) for pattern in self.ignore.split(",")]): 
-                        upload_files = list(filter(
-                        lambda file:
-                        # For each filename in files, search it against every regular expression passed to the script.
-                        # These are comma-separated in the string variable self.ignore.
-                        # The list of True/False returned by the searches is passed to any(),
-                        # which evaulates True if the filename matches any regular expression. Then, 'not' is
-                        # used to set this as False, telling filter() to exclude the file from the list (files)
-                        not any(
-                            [re.search(pattern, file) for pattern in self.ignore.split(",")]
-                            ),
-                        file_list
-                        ))
-                        # if there are any files in that folder to upload add to dictionary
-                        if upload_files:
-                            file_dict[path] = upload_files
-                # if nothing given to ignore add all files to the dictionary
-                else:
-                    file_dict[path] = file_list
-            # also need to loop through any files present in the root
-            # as above, check to see if any files contain any of the ignore terms
-            if self.ignore:
-                upload_files = list(filter(
-                lambda file:
-                # For each filename in files, search it against every regular expression passed to the script.
-                # These are comma-separated in the string variable self.ignore.
-                # The list of True/False returned by the searches is passed to any(),
-                # which evaulates True if the filename matches any regular expression. Then, 'not' is
-                # used to set this as False, telling filter() to exclude the file from the list (files)
-                not any(
-                    [re.search(pattern, file) for pattern in self.ignore.split(",")]
-                    ),
-                files
-                ))
-                # if any files to upload add to dictionary
-                if upload_files:            
-                    file_dict[root] = upload_files
-            # if no ignore terms given add all files to dictionary
-            else:
-                file_dict[root] = files
-        
+                folderpath = os.path.join(root, folder)
+                # create a dictionary entry for this folder
+                file_dict[folderpath] = []
+                # create a list of filepaths for all files in the folder
+                filepath_list = [os.path.join(folderpath,file) for file in os.listdir(folderpath) if os.path.isfile(os.path.join(folderpath, file))]
+                # loop through this list
+                for filepath in filepath_list:
+                    # test filepath for ignore patterns
+                    if not self.ignore_file(filepath):
+                        # if ignore pattern not found add filepath to list
+                        file_dict[folderpath].append(filepath)
+    
         # report the folders and files to be uploaded
         self.logger.info('Files for upload: %s', file_dict)
 
         # call upload agent on each folder
         for path in file_dict:
+            # if there are any files to upload
             if file_dict[path]:
                 # create the nexus path for each dir
                 nexus_path, project_filepath = self.get_nexus_filepath(path)
                 self.logger.info('Calling upload agent on %s to location %s', path, project_filepath)
                 # upload agent has a max number of uploads of 1000 per command
-                # count number of files in list and divide by 1000.0 eg 20/1000.0 = 0.02. ceil rounds up to the nearest integer (0.02->1). If there are 1000, ceil(1000/1000.0)=1.0
-                iterations_needed = math.ceil(len(file_dict[path]) / 1000.0)
+                # count number of files in list and divide by 500.0 eg 20/500.0 = 0.04. ceil rounds up to the nearest integer (0.04->1). If there are 500, ceil(500/500.0)=1.0 if there are 750 ceil(750/500.0)=2.0
+                iterations_needed = math.ceil(len(file_dict[path]) / 500.0)
                 # set the iterations count to 1
                 iteration_count = 1
                 # will pass a slice of the file list to the upload agent so set variables for start and stop so it uploads files 0-999
                 start = 0
-                stop = 1000
+                stop = 500
                 # while we haven't finished the iterations
                 while iteration_count <= iterations_needed:
                     # if it's the last iteration, set stop == length of list so not to ask for elements that aren't in the list  (if 4 items in list len(list)=4 and slice of 0:4 won't miss the last element)
@@ -311,8 +290,8 @@ class UAcaller():
                     
                     # increase the iteration_count and start and stop by 1000 for the next iteration so second iteration will do files 1000-1999 
                     iteration_count += 1
-                    start += 1000
-                    stop += 1000
+                    start += 500
+                    stop += 500
 
                     # Create DNAnexus upload command
                     nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder {nexus_folder} --do-not-compress --upload-threads 10 --tries 100 {files}'.format(
