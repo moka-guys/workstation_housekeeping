@@ -81,7 +81,7 @@ def cli_arguments(args):
     # value is contained as the .runfolder() method in the object returned by parser.parser_args().
     # Os.path.expanduser allows expands tilde signs (~) to a string containing the user home directory.
     parser.add_argument('-i', '--runfolder', required=True, help='An Illumina runfolder directory', type=os.path.expanduser)
-    parser.add_argument('-a', '--auth-token', help='A string or file containing a DNAnexus authorisation key used to access the DNANexus project. Default = ~/.dnanexus_auth_token', default='~/.dnanexus_auth_token', type=os.path.expanduser)
+    parser.add_argument('-a', '--auth-token', help='A string or file containing a DNAnexus authorisation key used to access the DNANexus project. Default = /usr/local/src/mokaguys/.dnanexus_auth_token', default='/usr/local/src/mokaguys/.dnanexus_auth_token', type=os.path.expanduser)
     parser.add_argument('--ignore', default=None, help="Comma-separated list of patterns which prevents the file from being uploaded if any pattern is present in filename or filepath.")
     # Note: When no project is given to the -p argument below, this script searches for a project in DNAnexus. See UAcaller.find_nexus_project() for details.
     parser.add_argument('-p', '--project', default=None, help='The name of an existing DNAnexus project for the given runfolder')
@@ -334,34 +334,34 @@ class UAcaller():
             grep_ignore =  ""
         
         local_file_count = "find " + self.runfolder + " -type f " + grep_ignore + " | wc -l"
-        print (local_file_count)
+        
         # Call upload command redirecting stderr to stdout
         proc = subprocess.Popen([local_file_count], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
         # Capture output streams (err is redirected to out above)
         (out, err) = proc.communicate()
         # Write output stream to logfile and terminal
-        self.logger.info('%s files to be uploaded (excluding any with ignore terms in filename or path)', out.decode().rstrip())
+        self.logger.info('%s files that should have been uploaded (excluding any with ignore terms in filename or path)', out.decode().rstrip())
 
         # count number of uploaded files
         uploaded_file_count = "dx find data --project %s | wc -l" % (self.project)
-        print(uploaded_file_count)
+        
         # Call upload command redirecting stderr to stdout
         proc = subprocess.Popen([uploaded_file_count], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
         # Capture output streams (err is redirected to out above)
         (out, err) = proc.communicate()
         # Write output stream to logfile and terminal
-        self.logger.info('%s files present in project', out.decode().rstrip())
+        self.logger.info('%s files present in DNANexus project', out.decode().rstrip())
         
         if self.ignore:
             # test for presense of any ignore strings in project
             uploaded_file_count_ignore = "dx find data --project %s " % (self.project) + grep_ignore.replace("-v","") + " | wc -l" 
-            print (uploaded_file_count_ignore)
+            
             # Call upload command redirecting stderr to stdout
             proc = subprocess.Popen([uploaded_file_count_ignore], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
             # Capture output streams (err is redirected to out above)
             (out, err) = proc.communicate()
             # Write output stream to logfile and terminal
-            self.logger.info('%s files present in project containing one of the ignore terms. NB this may not be accurate if the ignore term is found in the result of dx find data (eg present in project name)', out.decode().rstrip())
+            self.logger.info('%s files present in DNANexus project containing one of the ignore terms. NB this may not be accurate if the ignore term is found in the result of dx find data (eg present in project name)', out.decode().rstrip())
 
 
 def main(args):
