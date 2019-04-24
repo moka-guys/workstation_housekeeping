@@ -6,6 +6,7 @@ Uploads an Illumina runfolder to DNANexus.
 Example:
     usage: backup_runfolder.py [-h] -i RUNFOLDER -a AUTH [--ignore IGNORE] [-p PROJECT]
                                [--logpath LOGPATH]
+    where IGNORE is a comma seperated string of terms which prevents the upload of files if that term is present in the filename or filepath.
 """
 
 import argparse
@@ -80,8 +81,8 @@ def cli_arguments(args):
     # value is contained as the .runfolder() method in the object returned by parser.parser_args().
     # Os.path.expanduser allows expands tilde signs (~) to a string containing the user home directory.
     parser.add_argument('-i', '--runfolder', required=True, help='An Illumina runfolder directory', type=os.path.expanduser)
-    parser.add_argument('-a', '--auth-token', help='A DNAnexus authorisation key for the upload agent', default='~/.dnanexus_auth_token', type=os.path.expanduser)
-    parser.add_argument('--ignore', default=None, help="Comma-separated string. Regular expressions for files to ignore.")
+    parser.add_argument('-a', '--auth-token', help='A string or file containing a DNAnexus authorisation key used to access the DNANexus project. Default = /usr/local/src/mokaguys/.dnanexus_auth_token', default='/usr/local/src/mokaguys/.dnanexus_auth_token', type=os.path.expanduser)
+    parser.add_argument('--ignore', default=None, help="Comma-separated list of patterns which prevents the file from being uploaded if any pattern is present in filename or filepath.")
     # Note: When no project is given to the -p argument below, this script searches for a project in DNAnexus. See UAcaller.find_nexus_project() for details.
     parser.add_argument('-p', '--project', default=None, help='The name of an existing DNAnexus project for the given runfolder')
     parser.add_argument('--logpath', help='Logfile output directory', type=os.path.expanduser)
@@ -136,8 +137,9 @@ class UAcaller():
         self.auth_token = self.read_auth_token(auth_token)
         # Set DNAnexus project. If no project given, search DNAnexus for a project matching the runfolder name.
         self.project = self.find_nexus_project(project)
-        # Set list of regular expressions to exclude files from upload
+        # List of patterns to exclude files from upload
         self.ignore = ignore
+
 
     def read_auth_token(self, key_input):
         """Return the DNAnexus authentication toxen from the first line of an input file or an input string.
@@ -163,8 +165,7 @@ class UAcaller():
         # Get list of projects from DNAnexus as a string. Due to python3's default use of bytestrings
         # from various modules, bytes.decode() must be called to return the output as a pyton str object.
         # This is required for pattern matching with the re module.
-        projects = subprocess.check_output(['dx', 'find', 'projects']).decode()
-
+        projects = subprocess.check_output(['dx', 'find', 'projects', '--auth',self.auth_token]).decode()
         # Set the regular expression pattern for asserting that the project exists in DNAnexus.
         # The bytes() function is required to create bytestrings
         if project is None:
@@ -219,6 +220,20 @@ class UAcaller():
         # Return the nexus folder and full project filepath
         return nexus_path, "{}:{}".format(self.project, nexus_path)
 
+        
+    def ignore_file(self,filepath):
+        # if an ignore pattern was specified
+        if self.ignore:
+            # split this string on comma and loop through list
+            for pattern in self.ignore.split(","):
+                # make ignore pattern and filepath upper case and search filepath for the pattern
+                if pattern.upper() in filepath.upper(): 
+                    # if present return True to indicate the file should not be uploaded
+                    return True
+        # if no search patterns given, or pattern not found in filepath return False to say file can be uploaded
+        return False
+        
+
     def call_upload_agent(self):
         """
         Loop through the runfolder and build the upload agent command.
@@ -231,66 +246,43 @@ class UAcaller():
             # for any subfolders
             for folder in subfolders:
                 # build path to the folder
-                path = os.path.join(root, folder)
-                # for some reason if a folder is empty the files list contains the list of files from the previous dirctory
-                # therefore create a list of all the files in this subfolder
-                file_list = [file for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
-                upload_files = []
-                # if any ignore terms given
-                if self.ignore:
-                    # check if any of the ignore terms are present in the folder path
-                    if not any([re.search(pattern, path) for pattern in self.ignore.split(",")]): 
-                        upload_files = list(filter(
-                        lambda file:
-                        # For each filename in files, search it against every regular expression passed to the script.
-                        # These are comma-separated in the string variable self.ignore.
-                        # The list of True/False returned by the searches is passed to any(),
-                        # which evaulates True if the filename matches any regular expression. Then, 'not' is
-                        # used to set this as False, telling filter() to exclude the file from the list (files)
-                        not any(
-                            [re.search(pattern, file) for pattern in self.ignore.split(",")]
-                            ),
-                        file_list
-                        ))
-                        # if there are any files in that folder to upload add to dictionary
-                        if upload_files:
-                            file_dict[path] = upload_files
-                # if nothing given to ignore add all files to the dictionary
-                else:
-                    file_dict[path] = file_list
-            # also need to loop through any files present in the root
-            # as above, check to see if any files contain any of the ignore terms
-            if self.ignore:
-                upload_files = list(filter(
-                lambda file:
-                # For each filename in files, search it against every regular expression passed to the script.
-                # These are comma-separated in the string variable self.ignore.
-                # The list of True/False returned by the searches is passed to any(),
-                # which evaulates True if the filename matches any regular expression. Then, 'not' is
-                # used to set this as False, telling filter() to exclude the file from the list (files)
-                not any(
-                    [re.search(pattern, file) for pattern in self.ignore.split(",")]
-                    ),
-                files
-                ))
-                # if any files to upload add to dictionary
-                if upload_files:            
-                    file_dict[root] = upload_files
-            # if no ignore terms given add all files to dictionary
-            else:
-                file_dict[root] = files
-        
+                folderpath = os.path.join(root, folder)
+                # create a dictionary entry for this folder
+                file_dict[folderpath] = []
+                # create a list of filepaths for all files in the folder
+                filepath_list = [os.path.join(folderpath,file) for file in os.listdir(folderpath) if os.path.isfile(os.path.join(folderpath, file))]
+                # loop through this list
+                for filepath in filepath_list:
+                    # test filepath for ignore patterns
+                    if not self.ignore_file(filepath):
+                        # if ignore pattern not found add filepath to list
+                        file_dict[folderpath].append(filepath)
+            # repeat for the root (not just subfolders)
+            # build path to the folder
+            folderpath = os.path.join(root)
+            # create a dictionary entry for this folder
+            file_dict[folderpath] = []
+            # create a list of filepaths for all files in the folder
+            filepath_list = [os.path.join(folderpath,file) for file in os.listdir(folderpath) if os.path.isfile(os.path.join(folderpath, file))]
+            # loop through this list
+            for filepath in filepath_list:
+                # test filepath for ignore patterns
+                if not self.ignore_file(filepath):
+                    # if ignore pattern not found add filepath to list
+                    file_dict[folderpath].append(filepath)
+    
         # report the folders and files to be uploaded
         self.logger.info('Files for upload: %s', file_dict)
 
         # call upload agent on each folder
         for path in file_dict:
+            # if there are any files to upload
             if file_dict[path]:
                 # create the nexus path for each dir
                 nexus_path, project_filepath = self.get_nexus_filepath(path)
                 self.logger.info('Calling upload agent on %s to location %s', path, project_filepath)
                 # upload agent has a max number of uploads of 1000 per command
-                # count number of files in list and divide by 500.0 eg 20/500.0 = 0.04. ceil rounds up to the nearest integer (0.02->1). If there are 500, ceil(500/500.0)=1.0
+                # count number of files in list and divide by 500.0 eg 20/500.0 = 0.04. ceil rounds up to the nearest integer (0.04->1). If there are 500, ceil(500/500.0)=1.0 if there are 750 ceil(750/500.0)=2.0
                 iterations_needed = math.ceil(len(file_dict[path]) / 500.0)
                 # set the iterations count to 1
                 iteration_count = 1
@@ -328,6 +320,49 @@ class UAcaller():
                     # Write output stream to logfile and terminal
                     self.logger.debug(out.decode())
 
+    def count_uploaded_files(self):
+        # count number of files to be uploaded 
+        # if ignore terms given need to add a grep step 
+        if self.ignore:
+            # -v excludes any files matching the given terms (stated with -e)
+            # -i makes this search case insensitive
+            grep_ignore =  "| grep -v -i "
+            # split ignore string on comma and loop through list
+            for pattern in self.ignore.split(","):
+                grep_ignore = grep_ignore + ' -e "' + pattern + '" '
+        else:
+            grep_ignore =  ""
+        
+        local_file_count = "find " + self.runfolder + " -type f " + grep_ignore + " | wc -l"
+        
+        # Call upload command redirecting stderr to stdout
+        proc = subprocess.Popen([local_file_count], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
+        # Capture output streams (err is redirected to out above)
+        (out, err) = proc.communicate()
+        # Write output stream to logfile and terminal
+        self.logger.info('%s files that should have been uploaded (excluding any with ignore terms in filename or path)', out.decode().rstrip())
+
+        # count number of uploaded files
+        uploaded_file_count = "dx find data --project %s | wc -l" % (self.project)
+        
+        # Call upload command redirecting stderr to stdout
+        proc = subprocess.Popen([uploaded_file_count], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
+        # Capture output streams (err is redirected to out above)
+        (out, err) = proc.communicate()
+        # Write output stream to logfile and terminal
+        self.logger.info('%s files present in DNANexus project', out.decode().rstrip())
+        
+        if self.ignore:
+            # test for presense of any ignore strings in project
+            uploaded_file_count_ignore = "dx find data --project %s " % (self.project) + grep_ignore.replace("-v","") + " | wc -l" 
+            
+            # Call upload command redirecting stderr to stdout
+            proc = subprocess.Popen([uploaded_file_count_ignore], stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
+            # Capture output streams (err is redirected to out above)
+            (out, err) = proc.communicate()
+            # Write output stream to logfile and terminal
+            self.logger.info('%s files present in DNANexus project containing one of the ignore terms. NB this may not be accurate if the ignore term is found in the result of dx find data (eg present in project name)', out.decode().rstrip())
+
 
 def main(args):
     """Uploads runfolder to DNAnexus by passing given arguments to the DNAnexus upload agent."""
@@ -345,9 +380,14 @@ def main(args):
     # Create an object to set up the upload agent command
     logger.info('Creating UAcaller object with the following arguments: %s', vars(parsed_args))
     ua_object = UAcaller(runfolder=parsed_args.runfolder, project=parsed_args.project, auth_token=parsed_args.auth_token, ignore=parsed_args.ignore)
+    
     # Call upload agent on runfolder
     logger.info('Arguments read to object. Calling upload agent for input files.')
     ua_object.call_upload_agent()
+    
+    # run tests to count files
+    logger.info('Counting the number of files that need to be uploaded, have been uploaded and check if any that should have been ignored are in Nexus.')
+    ua_object.count_uploaded_files()
 
     logger.info('END.')
 
