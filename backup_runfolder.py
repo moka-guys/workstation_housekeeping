@@ -41,7 +41,7 @@ def log_setup(args):
     # If logfile path passed to --logpath, prepend to logfile name, else write to current directory
     logpath = args.logpath if args.logpath else ""
     # Set logfile name as runfolder name with '.log' extension
-    logfile_name = "".join([os.path.basename(args.runfolder), ".log"])
+    logfile_name = "".join([os.path.basename(args.runfolder.strip("/")), ".log"])
     logfile_fullpath = os.path.join(logpath, logfile_name)
 
     # Create dictionary with logging config parameters.
@@ -281,14 +281,14 @@ class UAcaller():
                 # create the nexus path for each dir
                 nexus_path, project_filepath = self.get_nexus_filepath(path)
                 self.logger.info('Calling upload agent on %s to location %s', path, project_filepath)
-                # upload agent has a max number of uploads of 1000 per command
-                # count number of files in list and divide by 500.0 eg 20/500.0 = 0.04. ceil rounds up to the nearest integer (0.04->1). If there are 500, ceil(500/500.0)=1.0 if there are 750 ceil(750/500.0)=2.0
-                iterations_needed = math.ceil(len(file_dict[path]) / 500.0)
+                # upload agent has a max number of uploads of 1000 per command. uploadingmultiple files at a time is quicker, but uploading too many at a time has caused it to hang.
+                # count number of files in list and divide by 100.0 eg 20/100.0 = 0.02. ceil rounds up to the nearest integer (0.02->1). If there are 100, ceil(100/100.0)=1.0 if there are 750 ceil(750/100.0)=8.0
+                iterations_needed = math.ceil(len(file_dict[path]) / 100.0)
                 # set the iterations count to 1
                 iteration_count = 1
                 # will pass a slice of the file list to the upload agent so set variables for start and stop so it uploads files 0-999
                 start = 0
-                stop = 500
+                stop = 100
                 # while we haven't finished the iterations
                 while iteration_count <= iterations_needed:
                     # if it's the last iteration, set stop == length of list so not to ask for elements that aren't in the list  (if 4 items in list len(list)=4 and slice of 0:4 won't miss the last element)
@@ -303,8 +303,8 @@ class UAcaller():
                     
                     # increase the iteration_count and start and stop by 1000 for the next iteration so second iteration will do files 1000-1999 
                     iteration_count += 1
-                    start += 500
-                    stop += 500
+                    start += 100
+                    stop += 100
 
                     # Create DNAnexus upload command
                     nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder {nexus_folder} --do-not-compress --upload-threads 10 --tries 100 {files}'.format(
