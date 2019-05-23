@@ -19,6 +19,7 @@ import math
 
 import logging
 from logging.config import dictConfig
+import housekeeping_config as config
 
 def log_setup(args):
     """Set up script logging object.
@@ -139,7 +140,8 @@ class UAcaller():
         self.project = self.find_nexus_project(project)
         # List of patterns to exclude files from upload
         self.ignore = ignore
-
+        # set upload agent path
+        self.ua_path = config.ua_path
 
     def read_auth_token(self, key_input):
         """Return the DNAnexus authentication toxen from the first line of an input file or an input string.
@@ -307,8 +309,8 @@ class UAcaller():
                     stop += 100
 
                     # Create DNAnexus upload command
-                    nexus_upload_command = ('ua --auth-token {auth_token} --project {nexus_project} --folder {nexus_folder} --do-not-compress --upload-threads 10 --tries 100 {files}'.format(
-                        auth_token=self.auth_token, nexus_project=self.project, nexus_folder=nexus_path, files=files_string))
+                    nexus_upload_command = ('{ua_path} --auth-token {auth_token} --project {nexus_project} --folder {nexus_folder} --do-not-compress --upload-threads 10 --tries 100 {files}'.format(
+                        ua_path=self.ua_path, auth_token=self.auth_token, nexus_project=self.project, nexus_folder=nexus_path, files=files_string))
 
                     # Mask the autentication key in the upload command and log
                     masked_nexus_upload_command = nexus_upload_command.replace(self.auth_token, "")
@@ -375,7 +377,7 @@ def main(args):
 
     # Check DNAnexus utilities exist in system path.
     logger.info('Searching for executables...')
-    find_executables(['ua', 'dx'])
+    find_executables([config.ua_path, 'dx'])
 
     # Create an object to set up the upload agent command
     logger.info('Creating UAcaller object with the following arguments: %s', vars(parsed_args))
