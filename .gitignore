@@ -1,3 +1,4 @@
 *.pyc
 *.egg-info
-config.json
+wscleaner/wscleaner/config.json
+wscleaner/test/test_dir*.txt
