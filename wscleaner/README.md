@@ -13,14 +13,15 @@ A DNAnexus API key must be cached locally using the `--set-key` option.
 ## Install
 
 ```bash
-git clone https://github.com/moka-guys/wscleaner.git
-pip install ./wscleaner
+git clone https://github.com/moka-guys/workstation_housekeeping.git
+pip install workstation_housekeeping/wscleaner
+wscleaner --version # Print version number
 ```
 
 ## Usage
 
 ```bash
-wscleaner --set-key DNA_NEXUS_KEY # Localyl caches dnanexus api key
+wscleaner --set-key DNA_NEXUS_KEY # Cache dnanexus api key
 wscleaner ROOT_DIRECTORY --logfile LOGFILE_PATH
 ```
 
