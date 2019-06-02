@@ -1,4 +1,4 @@
-# Workstation Housekeeping v1.4
+# Workstation Housekeeping v1.5
 
 Scripts to manage data on the NGS workstation
 

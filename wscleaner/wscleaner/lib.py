@@ -3,7 +3,7 @@
 
 Utlily classes for the workstation cleaner module.
 
-Objects:
+Classes:
     RunFolder: A local directory containing files with the 'fastq.gz' extension
     DxProjectRunFolder: A DNAnexus project
     RunFolderManager: Contains methods for finding, checking and deleting runfolders in a root directory.
