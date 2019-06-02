@@ -7,7 +7,7 @@ Methods:
     get_config(): Read the DNANexus API token from the application cache file
     dx_set_auth(): Set the DNAnexus authentication token used in each instance of the application
 
-Objects:
+Classes:
     SetKeyAction: Set the DNAnexus authentication token used in future instances of the application and exit
     PrintKeyAction: Print the cached DNAnexus authentication key
 """
