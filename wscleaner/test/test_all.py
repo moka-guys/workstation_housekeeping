@@ -7,7 +7,7 @@ import sys
 import shutil
 
 from pkg_resources import resource_filename
-from wscleaner.auth import SetKeyAction, dx_set_auth
+from wscleaner.auth import SetKeyAction, dx_set_auth, CONFIG_FILE
 from wscleaner.main import cli_parser
 from wscleaner.lib import RunFolderManager, RunFolder
 
@@ -30,6 +30,12 @@ def rfm():
     rfm = RunFolderManager(str(test_path))
     return rfm
 
+@pytest.fixture
+def rfm_dry():
+    """Return an instance of the runfolder manager with the test/data directory"""
+    test_path = Path(str(Path(__file__).parent), 'data')
+    rfm_dry = RunFolderManager(str(test_path), dry_run=True)
+    return rfm_dry
 
 # TESTS
 class TestAuth:
@@ -47,7 +53,7 @@ class TestAuth:
         with pytest.raises(SystemExit) as err:
             args = cli_parser()
         # Make assertions on created config file
-        fn = resource_filename('wscleaner','config.json')
+        fn = resource_filename('wscleaner',CONFIG_FILE)
         with open(fn, 'r') as f:
             assert auth_token in f.read()
         # Delete temp config
@@ -95,3 +101,9 @@ class TestRFM:
         monkeypatch.setattr(shutil, 'rmtree', lambda x: 'TEST_DELETED')
         rfm.delete(test_folder)
         assert test_folder.name in rfm.deleted
+
+    def test_dry_run(self, rfm_dry):
+        """test that the dry_run option does not cause the test directory to be deleted"""
+        test_folder = rfm_dry.find_runfolders(min_age=0)[0]
+        rfm_dry.delete(test_folder)
+        assert test_folder.name not in rfm_dry.deleted

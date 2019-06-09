@@ -146,6 +146,7 @@ class RunFolderManager():
 
     Args:
         directory (str): A parent directory containing runfolders to process
+        dry_run (bool): Do not delete directories
     Attributes:
         root(pathlib.Path): A path object to the root directory
         deleted(List): A list of deleted runfolders populated by calls to self.delete()
@@ -159,10 +160,11 @@ class RunFolderManager():
     Raises:
         __validate():ValueError: The directory passed to the class instance does not exist.
     """
-    def __init__(self, directory):
+    def __init__(self, directory, dry_run=False):
         self.logger = logging.getLogger(__name__ + '.RunFolderManager')
         self.__validate(directory)
         self.root = Path(directory)
+        self.__dry_run = dry_run
         self.deleted = [] # Delete runfolders appended here by self.deleted
 
     def __validate(self, directory):
@@ -217,6 +219,10 @@ class RunFolderManager():
     
     def delete(self, runfolder):
         """Delete the local runfolder from the root directory and append name to self.deleted."""
-        self.deleted.append(runfolder.name)
-        shutil.rmtree(runfolder.path)
-        self.logger.debug(f'{runfolder.name} DELETED.')
+        print(self.__dry_run)
+        if self.__dry_run:
+            self.logger.info(f'DRY RUN DELETE {runfolder.name}')
+        else:
+            self.deleted.append(runfolder.name)
+            shutil.rmtree(runfolder.path)
+            self.logger.info(f'{runfolder.name} DELETED.')

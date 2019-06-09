@@ -31,11 +31,12 @@ def cli_parser():
     # Define CLI arguments
     parser.add_argument('--set-key', action='setkey', help='Cache a DNA Nexus API key')
     parser.add_argument('--print-key', nargs=0, action='printkey', help='Print the cached DNA Nexus API key')
+    parser.add_argument('--dry-run', help='Perform a dry run without deleting files', action='store_true', default=False)
     parser.add_argument('root', help='A directory containing runfolders to process')
     parser.add_argument('--logfile', help='A path for the application logfile', default='mokaguys_logger.log')
     # Get version from setup.py as version CLI response
     version_number = pkg_resources.require("wscleaner")[0].version
-    parser.add_argument('--version', help='Programe version', action='version', version=f"wscleaner v{version_number}")
+    parser.add_argument('--version', help='Print version', action='version', version=f"wscleaner v{version_number}")
     args = parser.parse_args()
     return args
 
@@ -52,7 +53,8 @@ def main():
     dx_set_auth()
 
     # Set root directory and search it for runfolders
-    RFM = RunFolderManager(args.root)
+    # If dry-run CLI flag is given, no directories are deleted by the runfolder manager.
+    RFM = RunFolderManager(args.root, dry_run=args.dry_run)
     logger.info(f'Root directory {args.root}')
     local_runfolders = RFM.find_runfolders(min_age=0)
     logger.debug(f'Found local runfolders: {[rf.name for rf in local_runfolders]}')
@@ -66,7 +68,6 @@ def main():
             logfiles_uploaded = RFM.check_logfiles(runfolder)
             if fastqs_uploaded and logfiles_uploaded:
                 RFM.delete(runfolder)
-                logger.info(f'{runfolder.name} - DELETED')
             elif not fastqs_uploaded:
                 logger.warning(f'{runfolder.name} - FASTQ MISMATCH')
             elif not logfiles_uploaded:
