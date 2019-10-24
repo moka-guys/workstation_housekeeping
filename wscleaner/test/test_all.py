@@ -14,7 +14,7 @@ from wscleaner.lib import RunFolderManager, RunFolder
 # AUTH: Set DNAnexus authentication for tests
 def test_auth(auth_token):
     """Test that an authentication token is passed to pytest as a command line argument"""
-    assert auth_token != None
+    assert auth_token is not None
 
 @pytest.fixture(autouse=True)
 def set_auth(auth_token):
