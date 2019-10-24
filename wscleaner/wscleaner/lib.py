@@ -71,7 +71,8 @@ class DxProjectRunFolder():
     Arguments:
         runfolder_name (str): The name of a local runfolder    
     Attributes:
-        id (str): A DNAnexus project ID. Project matches input runfolder based on business rules.
+        runfolder (str): Runfolder name
+        id (str): Project ID of the matching runfolder project in DNANexus.
     Methods:
         find_fastqs: Returns a list of files in the DNAnexus project (self.id) with the fastq.gz extension
         count_logfiles: Count logfiles in the DNAnexus project (self.id). Logfiles are in an expected location
