@@ -84,7 +84,6 @@ class DxProjectRunFolder():
 
     def find_fastqs(self):
         """Returns a list of files in the DNAnexus project (self.id) with the fastq.gz extension"""
-        fastq_regex = 'fastq.gz'
         # Search dnanexus for files with the fastq.gz extension.
         # name_mode='regexp' tells dxpy to look for any occurence of 'fastq.gz' in the filename
         search_response = dxpy.find_data_objects(
