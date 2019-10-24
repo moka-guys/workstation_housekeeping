@@ -109,7 +109,7 @@ class DxProjectRunFolder():
         # Set uploaded runfolder name. Runfolder is renamed upon upload to the DNANexus project
         # without the first four characters
         uploaded_runfolder = dxpy.describe(self.id)['name'][4:]
-        # Set logfiles locatoin. This is expected in 'Logfiles/', a subdirectory of the uploaded runfolder 
+        # Set logfile location in DNANexus project. This is expected in 'Logfiles/', a subdirectory of the uploaded runfolder 
         logfile_dir = str(Path('/',uploaded_runfolder,'Logfiles'))
         logfile_list = dxpy.find_data_objects(project=self.id, folder=logfile_dir, classname='file')
         logfile_count = len(list(logfile_list))
@@ -134,7 +134,7 @@ class DxProjectRunFolder():
             return None
     
     def __bool__(self):
-        """Boolean expressions on class instances will return True if a single DNAnexus project was found."""
+        """Allows boolean expressions on class instances which return True if a single DNAnexus project was found."""
         if self.id:
             return True
         else:
@@ -185,7 +185,7 @@ class RunFolderManager():
         runfolder_objects = []
         for directory in subdirectories:
             rf = RunFolder(directory)
-            # Criteria for runfolder: Older than or equal to min_age and containsn fastq.gz files
+            # Criteria for runfolder: Older than or equal to min_age and contains fastq.gz files
             if (rf.age >= min_age) and (rf.find_fastqs(count=True) > 0):
                 self.logger.debug(f'{rf.name} IS RUNFOLDER.')
                 runfolder_objects.append(rf)
@@ -197,14 +197,7 @@ class RunFolderManager():
         """Returns true if a runfolder's fastq.gz files match those in it's DNAnexus project."""
         dx_fastqs = runfolder.dx_project.find_fastqs()
         local_fastqs = runfolder.find_fastqs()
-        fastqs_equal = sorted(dx_fastqs) == sorted(local_fastqs)
-        # Fastq files with "Undetermined" in their name may not be uploaded to DNAnexus.
-        # We accept local runfolders with 2 more fastq files than their dna nexus project.
-        equal_without_undetermined_fastqs = (
-            len(local_fastqs) == len(dx_fastqs) + 2 and
-            all([fastq in local_fastqs for fastq in dx_fastqs])
-            )
-        fastq_bool = fastqs_equal or equal_without_undetermined_fastqs
+        fastq_bool = all([fastq in dx_fastqs for fastq in local_fastqs])
         self.logger.debug(f'{runfolder.name} FASTQ BOOL: {fastq_bool}')
         return fastq_bool
     
