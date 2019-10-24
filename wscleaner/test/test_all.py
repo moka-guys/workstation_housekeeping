@@ -76,9 +76,9 @@ class TestFolders:
 
     def test_min_age(self, rfm):
         """test that the runfolder age function records age"""
-        runfolders = rfm.find_runfolders(min_age=0)
+        runfolders = rfm.find_runfolders(min_age=10)
         # Asser that this test runfolder was recently generated
-        assert all([ rf.age < 14 for rf in runfolders ])
+        assert all([ rf.age > 10 for rf in runfolders ])
 
 class TestRFM:
     def test_find_runfolders(self, data_test_runfolders, rfm):
