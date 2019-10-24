@@ -8,15 +8,14 @@ Classes:
     DxProjectRunFolder: A DNAnexus project
     RunFolderManager: Contains methods for finding, checking and deleting runfolders in a root directory.
 """
-
-from pathlib import Path
-import dxpy
+import logging
 import shutil
 import time
+from pathlib import Path
 
-from functools import partial
+import dxpy
 
-import logging
+
 logger = logging.getLogger(__name__)
 
 class RunFolder():
