@@ -1,4 +1,4 @@
-# Workstation Housekeeping v1.5
+# Workstation Housekeeping v1.6
 
 Scripts to manage data on the NGS workstation
 
@@ -56,6 +56,7 @@ Delete local directories that have been uploaded to the DNAnexus cloud storage s
 git clone https://github.com/moka-guys/workstation_housekeeping.git
 pip install workstation_housekeeping/wscleaner
 wscleaner --version # Print version number
+# If installing on workstation see wscleaner/README.md section 'Workstation Environment'
 ```
 
 ### Usage
