@@ -18,11 +18,31 @@ pip install workstation_housekeeping/wscleaner
 wscleaner --version # Print version number
 ```
 
-## Usage
+## Quickstart
 
 ```bash
 wscleaner --set-key DNA_NEXUS_KEY # Cache dnanexus api key
-wscleaner ROOT_DIRECTORY --logfile LOGFILE_PATH
+wscleaner ROOT_DIRECTORY
+```
+
+## Usage
+
+```
+wscleaner   [-h] [--set-key SET_KEY] [--print-key] [--dry-run]
+            [--logfile LOGFILE] [--min-age MIN_AGE] [--version]
+            root
+
+positional arguments:
+  root               A directory containing runfolders to process
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --set-key SET_KEY  Cache a DNA Nexus API key
+  --print-key        Print the cached DNA Nexus API key
+  --dry-run          Perform a dry run without deleting files
+  --logfile LOGFILE  A path for the application logfile
+  --min-age MIN_AGE  The age (days) a runfolder must be to be deleted
+  --version          Print version
 ```
 
 ## Test

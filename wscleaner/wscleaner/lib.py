@@ -174,7 +174,7 @@ class RunFolderManager():
             self.logger.error(f'Directory does not exist: {directory}', exc_info=True)
             raise
 
-    def find_runfolders(self, min_age=14):
+    def find_runfolders(self, min_age=None):
         """Search the parent directory for subdirectories containing fastq.gz files.
         Args:
             min_age(int): Minimum age in days of runfolders returned.
@@ -211,7 +211,6 @@ class RunFolderManager():
     
     def delete(self, runfolder):
         """Delete the local runfolder from the root directory and append name to self.deleted."""
-        print(self.__dry_run)
         if self.__dry_run:
             self.logger.info(f'DRY RUN DELETE {runfolder.name}')
         else:

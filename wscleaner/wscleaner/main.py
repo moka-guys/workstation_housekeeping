@@ -34,6 +34,7 @@ def cli_parser():
     parser.add_argument('--dry-run', help='Perform a dry run without deleting files', action='store_true', default=False)
     parser.add_argument('root', help='A directory containing runfolders to process')
     parser.add_argument('--logfile', help='A path for the application logfile', default='mokaguys_logger.log')
+    parser.add_argument('--min-age', help='The age (days) a runfolder must be to be deleted', type=int, default=14)
     # Get version from setup.py as version CLI response
     version_number = pkg_resources.require("wscleaner")[0].version
     parser.add_argument('--version', help='Print version', action='version', version=f"wscleaner v{version_number}")
@@ -56,7 +57,7 @@ def main():
     # If dry-run CLI flag is given, no directories are deleted by the runfolder manager.
     RFM = RunFolderManager(args.root, dry_run=args.dry_run)
     logger.info(f'Root directory {args.root}')
-    local_runfolders = RFM.find_runfolders(min_age=0)
+    local_runfolders = RFM.find_runfolders(min_age=args.min_age)
     logger.debug(f'Found local runfolders: {[rf.name for rf in local_runfolders]}')
 
     for runfolder in local_runfolders:
