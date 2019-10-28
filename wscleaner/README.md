@@ -52,6 +52,10 @@ optional arguments:
 pytest . --auth_token DNA_NEXUS_KEY
 ```
 
+## Workstation Environment
+The directory `env/` in this repository contains conda environment scripts for the workstation. These remove conflicts in the PYTHONPATH environment variable by editing the variable when conda is activated. The conda documentation describes where to place these scripts under ['saving environment variables'](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#macos-and-linux).
+
+
 ## License
 
 Developed by Viapath Genome Informatics
