@@ -42,7 +42,7 @@ def log_setup(args):
     # If logfile path passed to --logpath, prepend to logfile name, else write to current directory
     logpath = args.logpath if args.logpath else ""
     # Set logfile name as runfolder name with '.log' extension
-    logfile_name = "".join([os.path.basename(args.runfolder.strip("/")), ".log"])
+    logfile_name = "".join([os.path.basename(args.runfolder.strip("/")), "_backup_runfolder.log"])
     logfile_fullpath = os.path.join(logpath, logfile_name)
 
     # Create dictionary with logging config parameters.
