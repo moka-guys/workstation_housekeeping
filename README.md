@@ -1,4 +1,4 @@
-# Workstation Housekeeping v1.6
+# Workstation Housekeeping v1.7
 
 Scripts to manage data on the NGS workstation
 
@@ -29,7 +29,7 @@ This tool requires the DNAnexus utilities `ua` (upload agent) and `dx` (DNAnexus
     * A count of files that should be uploaded (using the ignore terms if provided)
     * A count of files in the DNA Nexus project
     * (If relevant) A count of files in the DNA Nexus project containing a pattern to be ignored. NB this may not be accurate if the ignore term is found in the result of dx find data (eg present in project name)
-* Logs from this and the script are written to a logfile, named after the runfolder. A destination for this file can be passed to the `--logpath` flag.
+* Logs from this and the script are written to a logfile, named "runfolder_backup_runfolder.log". A destination for this file can be passed to the `--logpath` flag.
 
 ---
 
