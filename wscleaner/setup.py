@@ -13,7 +13,7 @@ setup(name='wscleaner',
       
       python_requires = '>=3.6.8',
       install_requires = ['docutils>=0.3', 'dxpy==0.279.0', 'pytest==4.4.0', 'pytest-cov==2.6.1',
-        'Sphinx==2.0.1', 'psutil==5.6.1'],
+        'Sphinx==2.0.1', 'psutil==5.6.6'],
 
       package_data = {},
 
