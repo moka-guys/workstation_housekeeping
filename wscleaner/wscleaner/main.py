@@ -35,6 +35,7 @@ def cli_parser():
     parser.add_argument('root', help='A directory containing runfolders to process')
     parser.add_argument('--logfile', help='A path for the application logfile', default='mokaguys_logger.log')
     parser.add_argument('--min-age', help='The age (days) a runfolder must be to be deleted', type=int, default=14)
+    parser.add_argument('--logfile-count', help='The number of logfiles a runfolder must have in /Logfiles', type=int, default=5)
     # Get version from setup.py as version CLI response
     version_number = pkg_resources.require("wscleaner")[0].version
     parser.add_argument('--version', help='Print version', action='version', version=f"wscleaner v{version_number}")
@@ -66,7 +67,7 @@ def main():
         # runfolder.dx_project is evaluated first as following criteria checks depend on it
         if runfolder.dx_project:
             fastqs_uploaded = RFM.check_fastqs(runfolder)
-            logfiles_uploaded = RFM.check_logfiles(runfolder)
+            logfiles_uploaded = RFM.check_logfiles(runfolder, args.logfile_count)
             if fastqs_uploaded and logfiles_uploaded:
                 RFM.delete(runfolder)
             elif not fastqs_uploaded:
