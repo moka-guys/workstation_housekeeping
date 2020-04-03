@@ -11,8 +11,8 @@ Methods:
 import argparse
 import logging
 import pkg_resources
+import dxpy
 from wscleaner import mokaguys_logger
-from wscleaner.auth import SetKeyAction, PrintKeyAction, dx_set_auth
 from wscleaner.lib import RunFolder, RunFolderManager
 
 
@@ -24,17 +24,12 @@ def cli_parser():
         Otherwise, --set-key and --print-key exit after actions are performed.
     """
     parser = argparse.ArgumentParser()
-    # argparse API for adding custom routines. SetKeyAction and PrintKeyAction are classes with 
-    # routines that exit the software after an action is performed.
-    parser.register('action', 'setkey', SetKeyAction)
-    parser.register('action', 'printkey', PrintKeyAction)
-    # Define CLI arguments
-    parser.add_argument('--set-key', action='setkey', help='Cache a DNA Nexus API key')
-    parser.add_argument('--print-key', nargs=0, action='printkey', help='Print the cached DNA Nexus API key')
+    parser.add_argument('--auth', help='A text file containing the DNANexus authentication token', type=str, default='/usr/local/src/mokaguys/.dnanexus_auth_token')
     parser.add_argument('--dry-run', help='Perform a dry run without deleting files', action='store_true', default=False)
     parser.add_argument('root', help='A directory containing runfolders to process')
     parser.add_argument('--logfile', help='A path for the application logfile', default='mokaguys_logger.log')
     parser.add_argument('--min-age', help='The age (days) a runfolder must be to be deleted', type=int, default=14)
+    parser.add_argument('--logfile-count', help='The number of logfiles a runfolder must have in /Logfiles', type=int, default=5)
     # Get version from setup.py as version CLI response
     version_number = pkg_resources.require("wscleaner")[0].version
     parser.add_argument('--version', help='Print version', action='version', version=f"wscleaner v{version_number}")
@@ -50,8 +45,10 @@ def main():
     logger = logging.getLogger(__name__)
     logger.info(f'START')
 
-    # Setup dxpy with cached authentication token
-    dx_set_auth()
+    # Setup dxpy authentication token read from command line file.
+    with open(args.auth) as f:
+        auth_token = f.read().rstrip()
+    dxpy.set_security_context({'auth_token_type': 'Bearer', 'auth_token': auth_token})
 
     # Set root directory and search it for runfolders
     # If dry-run CLI flag is given, no directories are deleted by the runfolder manager.
@@ -66,7 +63,7 @@ def main():
         # runfolder.dx_project is evaluated first as following criteria checks depend on it
         if runfolder.dx_project:
             fastqs_uploaded = RFM.check_fastqs(runfolder)
-            logfiles_uploaded = RFM.check_logfiles(runfolder)
+            logfiles_uploaded = RFM.check_logfiles(runfolder, args.logfile_count)
             if fastqs_uploaded and logfiles_uploaded:
                 RFM.delete(runfolder)
             elif not fastqs_uploaded:

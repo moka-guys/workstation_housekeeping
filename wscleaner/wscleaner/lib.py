@@ -201,11 +201,11 @@ class RunFolderManager():
         self.logger.debug(f'{runfolder.name} FASTQ BOOL: {fastq_bool}')
         return fastq_bool
     
-    def check_logfiles(self, runfolder):
+    def check_logfiles(self, runfolder, logfile_count):
         """Returns true if a runfolder's DNAnexus project contains 6 logfiles in the
             expected location"""
         dx_logfiles = runfolder.dx_project.count_logfiles()
-        logfile_bool = dx_logfiles >= 6
+        logfile_bool = (dx_logfiles == logfile_count)
         self.logger.debug(f'{runfolder.name} LOGFILE BOOL: {logfile_bool}')
         return logfile_bool
     
