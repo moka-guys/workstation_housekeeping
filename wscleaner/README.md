@@ -21,28 +21,31 @@ wscleaner --version # Print version number
 ## Quickstart
 
 ```bash
-wscleaner --set-key DNA_NEXUS_KEY # Cache dnanexus api key
 wscleaner ROOT_DIRECTORY
 ```
 
 ## Usage
 
 ```
-wscleaner   [-h] [--set-key SET_KEY] [--print-key] [--dry-run]
-            [--logfile LOGFILE] [--min-age MIN_AGE] [--version]
-            root
+usage: wscleaner [-h] [--auth AUTH] [--dry-run] [--logfile LOGFILE]
+                 [--min-age MIN_AGE] [--logfile-count LOGFILE_COUNT]
+                 [--version]
+                 root
 
 positional arguments:
-  root               A directory containing runfolders to process
+  root                  A directory containing runfolders to process
 
 optional arguments:
-  -h, --help         show this help message and exit
-  --set-key SET_KEY  Cache a DNA Nexus API key
-  --print-key        Print the cached DNA Nexus API key
-  --dry-run          Perform a dry run without deleting files
-  --logfile LOGFILE  A path for the application logfile
-  --min-age MIN_AGE  The age (days) a runfolder must be to be deleted
-  --version          Print version
+  -h, --help            show this help message and exit
+  --auth AUTH           A text file containing the DNANexus authentication
+                        token
+  --dry-run             Perform a dry run without deleting files
+  --logfile LOGFILE     A path for the application logfile
+  --min-age MIN_AGE     The age (days) a runfolder must be to be deleted
+  --logfile-count LOGFILE_COUNT
+                        The number of logfiles a runfolder must have in
+                        /Logfiles
+  --version             Print version
 ```
 
 ## Test
