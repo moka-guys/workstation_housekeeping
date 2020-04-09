@@ -29,4 +29,4 @@ NF4. Attempt to process all folders at least once
 
 A RunFolderManager class will instatiate objects for local Runfolders, each of which has an associated DNA Nexus project object. The manager loops over the runfolders and deletes them if all checks pass.
 
-DNA Nexus projects are accessed with the dxpy module, a python wrapper for the DNA Nexus API. Credentials are cached locally using the command-line option '--set-key'.
+DNA Nexus projects are accessed with the dxpy module, a python wrapper for the DNA Nexus API.

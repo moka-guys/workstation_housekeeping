@@ -1,4 +1,4 @@
-# Workstation Housekeeping v1.7
+# Workstation Housekeeping v1.8
 
 Scripts to manage data on the NGS workstation
 
@@ -62,7 +62,6 @@ wscleaner --version # Print version number
 ### Usage
 
 ```bash
-wscleaner --set-key DNA_NEXUS_KEY # Cache dnanexus api key
 wscleaner ROOT_DIRECTORY --logfile LOGFILE_PATH
 ```
 
