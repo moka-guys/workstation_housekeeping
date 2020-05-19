@@ -13,13 +13,14 @@ if [ -z $EXISTING_PROCESS ] ;then
   #   &> /dev/null : Discard stdout and stderr to empty output stream
   #   & : Run as a background process
   nohup ngrok tcp --region eu 22 &> /dev/null &
-  # Print the url for the ngrok server for SSH access.
-  # We pause for a few seconds to allow the connection to complete.
+  # Pause for a few seconds to allow the connection to complete.
   sleep 3
+  # Write the ngrok public url for SSH access to the syslog.
+  #   Triggers alert in slack with ssh url details and writes to stderr.
   NGROK_URL=$(curl http://localhost:4040/api/tunnels 2>/dev/null | jq ".tunnels[0].public_url")
-  echo $NGROK_URL
+  logger -s "ngrok_start - new workstation host - $NGROK_URL"
 else 
-  # If ngrok is already running, print the url to the ngrok server for SSH access
+  # If ngrok is already running, print the public url for SSH access to stderr
   NGROK_URL=$(curl http://localhost:4040/api/tunnels 2>/dev/null | jq ".tunnels[0].public_url") 
-  echo $NGROK_URL
+  echo "ngrok_start - $NGROK_URL" 1>&2
 fi
