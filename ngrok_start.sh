@@ -1,5 +1,5 @@
 #!/bin/bash
-# ngrok_start.sh - A script to start ngrok as a background process on the system.
+# ngrok_start.sh - A script to allow SSH access to the system by running ngrok as a background process
 #   Prints SSH details if ngrok is already running.
 #   Note: The ngrok process can be closed at anytime with `kill $(pidof ngrok)`
 
