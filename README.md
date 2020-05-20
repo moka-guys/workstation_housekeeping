@@ -1,4 +1,4 @@
-# Workstation Housekeeping v1.8
+# Workstation Housekeeping v1.9
 
 Scripts to manage data on the NGS workstation
 
@@ -63,6 +63,23 @@ wscleaner --version # Print version number
 
 ```bash
 wscleaner ROOT_DIRECTORY --logfile LOGFILE_PATH
+```
+
+---
+
+## ngrok_start.sh
+
+Allow SSH access to the system by running ngrok as a background process.
+
+### Installation
+
+See knowledge base article for ngrok installation.
+
+### Usage
+
+```bash
+$ ngrok_start.sh
+"tcp://30.tcp.eu.ngrok.io:5555"
 ```
 
 ---
