@@ -215,7 +215,6 @@ class RunFolderManager():
         runfolder_objects = []
         for directory in subdirectories:
             rf = RunFolder(directory)
-            self.logger.debug(f'ASSESING IF {rf.name} IS TSO500 RUNFOLDER.')
             # catch TSO500 runfolders here (do not contain fastqs)
             if (rf.age >= min_age) and (rf.TSO500_check()):
                 self.logger.debug(f'{rf.name} IS TSO500 RUNFOLDER.')
