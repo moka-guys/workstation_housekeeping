@@ -8,6 +8,12 @@ When executed, Runfolders in the input (root) directory are deleted based on the
 * All local FASTQ files are uploaded and in a 'closed' state
 * Six logfiles are present in the DNA Nexus project /Logfiles directory
 
+or if the run is identified as a TSO500 run, based on:
+  * the bcl2fastq2_output.log file created by the automated scripts
+
+  AND
+  * Presence of `_TSO` in the human readable DNANexus project name
+
 A DNAnexus API key must be cached locally using the `--set-key` option. 
 
 ## Install
@@ -17,6 +23,8 @@ git clone https://github.com/moka-guys/workstation_housekeeping.git
 pip install workstation_housekeeping/wscleaner
 wscleaner --version # Print version number
 ```
+Note that may need to activate the environment before installing with pip.
+On the workstation 2 environments exist - wscleaner and wscleaner_test (for development work)
 
 ## Quickstart
 
