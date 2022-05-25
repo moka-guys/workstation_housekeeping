@@ -6,7 +6,7 @@ When executed, Runfolders in the input (root) directory are deleted based on the
 
 * A single DNAnexus project is found matching the runfolder name
 * All local FASTQ files are uploaded and in a 'closed' state
-* Six logfiles are present in the DNA Nexus project /Logfiles directory
+* 5 logfiles are present in the DNA Nexus project /Logfiles directory
 
 or if the run is identified as a TSO500 run, based on:
   * the bcl2fastq2_output.log file created by the automated scripts
