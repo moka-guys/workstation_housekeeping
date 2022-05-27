@@ -82,6 +82,8 @@ class RunFolder():
                 if demultiplexing_file.readlines()[-1].startswith("TSO500 run."):
                     logfile_check=True
                     self.logger.debug(f'bcl2fastq2_output.log for {self.name} contains the string expected for TSO500 runs')
+                else:
+                    self.logger.debug(f'bcl2fastq2_output.log for {self.name} DOES NOT contain expected TSO500 string')
             # may be an issue identifying the DNAnexus project
             # get the dnanexus project name to assess if contains "_TSO"
             if self.dx_project.id:
@@ -222,15 +224,15 @@ class RunFolderManager():
             else:
                 # catch TSO500 runfolders here (do not contain fastqs)
                 if (rf.age >= min_age) and (rf.TSO500_check()):
-                    self.logger.debug(f'{rf.name} IS TSO500 RUNFOLDER.')
+                    self.logger.debug(f'{rf.name} is a TSO500 runfolder and is >= {min_age} days old.')
                     runfolder_objects.append(rf)
                 # Criteria for runfolder: Older than or equal to min_age and contains fastq.gz files
                 elif (rf.age >= min_age) and (rf.find_fastqs(count=True) > 0):
-                    self.logger.debug(f'{rf.name} IS RUNFOLDER.')
+                    self.logger.debug(f'{rf.name} contains 1 or more fastq and is >= {min_age} days old.')
                     runfolder_objects.append(rf)
                 # shouldn't get this far anymore - leave in just incase.
                 else:
-                    self.logger.debug(f'{rf.name} IS NOT RUNFOLDER.')
+                    self.logger.debug(f'{rf.name} has 0 fastqs, is not a TSO runfolder or is < {min_age} days old.')
                 
         return runfolder_objects
 
