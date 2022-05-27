@@ -1,4 +1,4 @@
-# Workstation Housekeeping v1.9
+# Workstation Housekeeping v1.10
 
 Scripts to manage data on the NGS workstation
 
@@ -49,23 +49,7 @@ $ findfastqs.sh RUNFOLDER
 ## Workstation Cleaner (wscleaner)
 
 Delete local directories that have been uploaded to the DNAnexus cloud storage service.
-
-### Install
-
-```bash
-git clone https://github.com/moka-guys/workstation_housekeeping.git
-pip install workstation_housekeeping/wscleaner
-wscleaner --version # Print version number
-# If installing on workstation see wscleaner/README.md section 'Workstation Environment'
-```
-
-### Usage
-
-```bash
-wscleaner ROOT_DIRECTORY --logfile LOGFILE_PATH
-```
-
----
+See wscleaner readme for more info
 
 ## ngrok_start.sh
 
