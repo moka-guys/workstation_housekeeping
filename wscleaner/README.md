@@ -10,7 +10,6 @@ When executed, Runfolders in the input (root) directory are deleted based on the
 
 or if the run is identified as a TSO500 run, based on:
   * the bcl2fastq2_output.log file created by the automated scripts
-
   AND
   * Presence of `_TSO` in the human readable DNANexus project name
 
