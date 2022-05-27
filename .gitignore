@@ -1,5 +1,4 @@
 *.pyc
-*.egg-info
 wscleaner/wscleaner/config.json
 wscleaner/test/test_dir*.txt
 wscleaner/test/data

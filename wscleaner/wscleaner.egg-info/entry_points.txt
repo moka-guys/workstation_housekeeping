@@ -1,0 +1,3 @@
+[console_scripts]
+wscleaner = wscleaner.main:main
+

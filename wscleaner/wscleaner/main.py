@@ -54,8 +54,9 @@ def main():
     # If dry-run CLI flag is given, no directories are deleted by the runfolder manager.
     RFM = RunFolderManager(args.root, dry_run=args.dry_run)
     logger.info(f'Root directory {args.root}')
+    logger.info(f'Identifying local runfolders to consider deleting')
     local_runfolders = RFM.find_runfolders(min_age=args.min_age)
-    logger.debug(f'Found local runfolders: {[rf.name for rf in local_runfolders]}')
+    logger.debug(f'Found local runfolders to consider deleting: {[rf.name for rf in local_runfolders]}')
 
     for runfolder in local_runfolders:
         logger.info(f'Processing {runfolder.name}')

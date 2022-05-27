@@ -12,6 +12,7 @@ import logging
 import shutil
 import time
 from pathlib import Path
+import os
 
 import dxpy
 
@@ -34,6 +35,7 @@ class RunFolder():
     def __init__(self, path):
         self.logger = logging.getLogger(__name__ + '.RunFolder')
         self.path = Path(path)
+        self.RTA_complete_exists = os.path.isfile(os.path.join(self.path,"RTAComplete.txt"))
         self.name = self.path.name
         self.logger.debug(f'Initiating RunFolder instance for {self.name}')
         self.dx_project = DxProjectRunFolder(self.name)
@@ -63,6 +65,37 @@ class RunFolder():
         else:
             self.logger.debug(f'{self.name} contains {len(fastq_filenames)} fastq files: {fastq_filenames}')
             return fastq_filenames
+    
+    def TSO500_check(self):
+        """
+        Checks if the run is a TSO500 run. These need to be cleaned up but do not contain fastqs
+        Returns True if TSO run detected.
+        """
+        logfile_check=False
+        project_name=False
+        bcl2fastq_filepath=os.path.join(self.path,"bcl2fastq2_output.log")
+        # ensure not trying to open files that don't exist
+        if os.path.isdir(self.path) and os.path.exists(bcl2fastq_filepath):
+            # open bcl2fastq file - should contain a standard statement from automated scripts
+            with open(bcl2fastq_filepath) as demultiplexing_file:
+                # take last line of the logfile - look for statement produced by automated scripts for TSO runs
+                if demultiplexing_file.readlines()[-1].startswith("TSO500 run."):
+                    logfile_check=True
+                    self.logger.debug(f'bcl2fastq2_output.log for {self.name} contains the string expected for TSO500 runs')
+                else:
+                    self.logger.debug(f'bcl2fastq2_output.log for {self.name} DOES NOT contain expected TSO500 string')
+            # may be an issue identifying the DNAnexus project
+            # get the dnanexus project name to assess if contains "_TSO"
+            if self.dx_project.id:
+                nexus_project_name = dxpy.describe(self.dx_project.id)["name"]
+                if "_TSO" in nexus_project_name:
+                    self.logger.debug(f'DNANexus project name {nexus_project_name} contains the string "_TSO"')
+                    project_name=True
+                else:
+                    self.logger.debug(f'DNANexus project name {nexus_project_name} does NOT contain the string "_TSO"')
+            # if both checks pass return true
+            if project_name and logfile_check:
+                return True
 
 
 class DxProjectRunFolder():
@@ -181,20 +214,33 @@ class RunFolderManager():
         Returns:
             runfolder_objects(list): List of wscleaner.lib.RunFolder objects.
         """
-        subdirectories = self.root.iterdir()
         runfolder_objects = []
-        for directory in subdirectories:
+        # list all directories in the runfolder dir.
+        for directory in [directory for directory in self.root.iterdir() if directory.is_dir()]:
             rf = RunFolder(directory)
-            # Criteria for runfolder: Older than or equal to min_age and contains fastq.gz files
-            if (rf.age >= min_age) and (rf.find_fastqs(count=True) > 0):
-                self.logger.debug(f'{rf.name} IS RUNFOLDER.')
-                runfolder_objects.append(rf)
+            # skip any folders that do not have an RTAComplete.txt file
+            if not rf.RTA_complete_exists:
+                self.logger.debug(f'{rf.name} is not a runfolder, or sequencing has not yet finished.')
             else:
-                self.logger.debug(f'{rf.name} IS NOT RUNFOLDER.')
+                # catch TSO500 runfolders here (do not contain fastqs)
+                if (rf.age >= min_age) and (rf.TSO500_check()):
+                    self.logger.debug(f'{rf.name} is a TSO500 runfolder and is >= {min_age} days old.')
+                    runfolder_objects.append(rf)
+                # Criteria for runfolder: Older than or equal to min_age and contains fastq.gz files
+                elif (rf.age >= min_age) and (rf.find_fastqs(count=True) > 0):
+                    self.logger.debug(f'{rf.name} contains 1 or more fastq and is >= {min_age} days old.')
+                    runfolder_objects.append(rf)
+                # shouldn't get this far anymore - leave in just incase.
+                else:
+                    self.logger.debug(f'{rf.name} has 0 fastqs, is not a TSO runfolder or is < {min_age} days old.')
+                
         return runfolder_objects
 
     def check_fastqs(self, runfolder):
-        """Returns true if a runfolder's fastq.gz files match those in it's DNAnexus project."""
+        """
+        Returns true if a runfolder's fastq.gz files match those in it's DNAnexus project.
+        Ensures all fastqs were uploaded.
+        """
         dx_fastqs = runfolder.dx_project.find_fastqs()
         local_fastqs = runfolder.find_fastqs()
         fastq_bool = all([fastq in dx_fastqs for fastq in local_fastqs])
@@ -202,8 +248,10 @@ class RunFolderManager():
         return fastq_bool
     
     def check_logfiles(self, runfolder, logfile_count):
-        """Returns true if a runfolder's DNAnexus project contains 6 logfiles in the
-            expected location"""
+        """Returns true if a runfolder's DNAnexus project contains X logfiles in the
+        expected location.
+        X is defined in the --logfile-count argument provided (default = 5)
+        """
         dx_logfiles = runfolder.dx_project.count_logfiles()
         logfile_bool = (dx_logfiles == logfile_count)
         self.logger.debug(f'{runfolder.name} LOGFILE BOOL: {logfile_bool}')
