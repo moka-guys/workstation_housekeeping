@@ -5,6 +5,7 @@
 
 # Get the process ID of ngrok if it is already running on the system
 EXISTING_PROCESS=$(pidof ngrok)
+ngrok_instance=$1
 
 if [ -z $EXISTING_PROCESS ] ;then
   # If ngrok is not running, start as a background process and print the url for SSH access
@@ -12,7 +13,12 @@ if [ -z $EXISTING_PROCESS ] ;then
   #   ngrok tcp --region eu 22 : Open an connection to ngrok server on port 22
   #   &> /dev/null : Discard stdout and stderr to empty output stream
   #   & : Run as a background process
-  nohup ngrok tcp --region eu 22 &> /dev/null &
+  if [[ $ngrok_instance == "docker" ]]; then
+    ngrok_token=$(cat /usr/local/src/mokaguys/.ngrok)
+    nohup docker run --net=host -it -e NGROK_AUTHTOKEN=$ngrok_token ngrok/ngrok:latest tcp 22 --region eu &> /dev/null &
+  else
+    nohup ngrok tcp --region eu 22 &> /dev/null &
+  fi
   # Pause for a few seconds to allow the connection to complete.
   sleep 3
   # Write the ngrok public url for SSH access to the syslog.
