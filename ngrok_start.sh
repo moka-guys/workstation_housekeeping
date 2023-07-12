@@ -6,17 +6,22 @@
 # Get the process ID of ngrok if it is already running on the system
 EXISTING_PROCESS=$(pidof ngrok)
 ngrok_instance=$1
-
+# If ngrok is not running, start as a background process and print the url for SSH access
 if [ -z $EXISTING_PROCESS ] ;then
-  # If ngrok is not running, start as a background process and print the url for SSH access
-  #   nohup [command] : Keep the process running the command even after you quit the session
-  #   ngrok tcp --region eu 22 : Open an connection to ngrok server on port 22
-  #   &> /dev/null : Discard stdout and stderr to empty output stream
-  #   & : Run as a background process
   if [[ $ngrok_instance == "docker" ]]; then
+    #   cat the ngrok password into a variable so it can be passed as a environment argument to docker (-e)
+    #   run docker container in detached mode (-d) 
+    #   name the instance
+    #   set --net=host attaches the container to the host network, rather than the docker network - this means ports don't need to be remapped.
+    #   and use ngrok/ngrok:latest tcp --region eu 22 : Open an connection to ngrok server on port 22
+    #   &> /dev/null : Discard stdout and stderr to empty output stream
     ngrok_token=$(cat /usr/local/src/mokaguys/.ngrok)
-    nohup docker run --net=host -it -e NGROK_AUTHTOKEN=$ngrok_token ngrok/ngrok:latest tcp 22 --region eu &> /dev/null &
+    docker run -d --name NGROK --net=host -it -e NGROK_AUTHTOKEN=$ngrok_token ngrok/ngrok:latest tcp 22 --region eu &> /dev/null
   else
+    #   nohup [command] : Keep the process running the command even after you quit the session
+    #   ngrok tcp --region eu 22 : Open an connection to ngrok server on port 22
+    #   &> /dev/null : Discard stdout and stderr to empty output stream
+    #   & : Run as a background process
     nohup ngrok tcp --region eu 22 &> /dev/null &
   fi
   # Pause for a few seconds to allow the connection to complete.
