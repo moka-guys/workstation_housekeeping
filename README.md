@@ -1,4 +1,4 @@
-# Workstation Housekeeping v1.10
+# Workstation Housekeeping v1.11
 
 Scripts to manage data on the NGS workstation
 
@@ -53,7 +53,7 @@ See wscleaner readme for more info
 
 ## ngrok_start.sh
 
-Allow SSH access to the system by running ngrok as a background process.
+Allow SSH access to the system by running ngrok as a background process. As of v1.11 supports dockerised ngrok instance.
 
 ### Installation
 
@@ -61,9 +61,15 @@ See knowledge base article for ngrok installation.
 
 ### Usage
 
-```bash
-$ ngrok_start.sh
-"tcp://30.tcp.eu.ngrok.io:5555"
-```
+Non-dockerised ngrok:
 
----
+`sudo bash ngrok_start.sh`
+
+Dockerised ngrok:
+
+`sudo bash ngrok_start.sh docker`
+
+### output
+
+The script will output the ngrok connection details
+
