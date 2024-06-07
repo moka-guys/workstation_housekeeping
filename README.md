@@ -67,4 +67,4 @@ pytest . --auth_token DNA_NEXUS_KEY
 
 ## License
 
-Developed by Viapath Genome Informatics
+Developed by Synnovis Genome Informatics
