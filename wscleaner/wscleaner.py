@@ -245,12 +245,11 @@ class RunFolderManager:
             runfolder_objects(list): List of wscleaner.lib.RunFolder objects.
         """
         runfolder_objects = []
+        directory_list = [directory for directory in self.runfolder_dir.iterdir() if directory.is_dir()]
+        # Sort subdirectories by last modified date
+        directory_list.sort(key=lambda subdir: subdir.stat().st_mtime)
         # list all directories in the runfolder dir.
-        for directory in [
-            directory
-            for directory in self.runfolder_dir.iterdir()
-            if directory.is_dir()
-        ]:
+        for directory in directory_list:
             rf = RunFolder(directory)
             # skip any folders that do not have an RTAComplete.txt file
             if not rf.RTA_complete_exists:
