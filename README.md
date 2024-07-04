@@ -47,15 +47,33 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  --runfolders_dir      A directory containing runfolders to process
   --auth AUTH           A text file containing the DNANexus authentication
                         token
   --dry-run             Perform a dry run without deleting files
-  --logfile LOGFILE     A path for the application logfile
   --min-age MIN_AGE     The age (days) a runfolder must be to be deleted
   --logfile-count LOGFILE_COUNT
                         The number of logfiles a runfolder must have in
                         /Logfiles
   --version             Print version
+```
+
+**The conda environment must be activated prior to running the wscleaner command.**
+
+### Dry run mode
+
+For example, if running in dry run mode:
+
+```
+conda activate wscleaner && python3 -m wscleaner /media/data3/share --dry-run
+```
+
+### Live mode
+
+If running in production mode:
+
+```
+conda activate wscleaner && python3 -m wscleaner /media/data3/share
 ```
 
 ## Test
