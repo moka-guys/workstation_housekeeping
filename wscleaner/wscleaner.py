@@ -43,6 +43,7 @@ class RunFolder:
         self.name = self.path.name
         self.logger.debug(f"Initiating RunFolder instance for {self.name}")
         self.dx_project = DxProjectRunFolder(self.name)
+        print(self.dx_project)
 
     @property
     def age(self):
@@ -131,6 +132,7 @@ class DxProjectRunFolder:
         self.logger = logging.getLogger(__name__ + ".DXProjectRunFolder")
         self.runfolder = runfolder_name
         self.id = self.__dx_find_one_project()
+        print(self.id)
 
     def find_fastqs(self):
         """Returns a list of files in the DNAnexus project (self.id) with the fastq.gz extension"""
@@ -140,7 +142,6 @@ class DxProjectRunFolder:
             project=self.id, classname="file", name="fastq.gz", name_mode="regexp"
         )
         file_ids = [result["id"] for result in search_response]
-
         # Gather a list of uploaded fastq files with the state 'closed', indicating a completed upload.
         fastq_filenames_unsorted = []
         for dx_file in file_ids:
@@ -277,13 +278,10 @@ class RunFolderManager:
         Ensures all fastqs were uploaded.
         """
         dx_fastqs = runfolder.dx_project.find_fastqs()
-        # print(dx_fastqs)
         local_fastqs = runfolder.find_fastqs()
-        print(local_fastqs)
-        # fastq_bool = all([fastq in dx_fastqs for fastq in local_fastqs])
-        # print(fastq_bool)
-        # self.logger.debug(f"{runfolder.name} FASTQ BOOL: {fastq_bool}")
-        # return fastq_bool
+        fastq_bool = all([fastq in dx_fastqs for fastq in local_fastqs])
+        self.logger.debug(f"{runfolder.name} FASTQ BOOL: {fastq_bool}")
+        return fastq_bool
 
     def check_logfiles(self, runfolder, logfile_count):
         """Returns true if a runfolder's DNAnexus project contains X logfiles in the

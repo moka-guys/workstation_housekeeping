@@ -6,9 +6,9 @@ from wscleaner.wscleaner import RunFolderManager, RunFolder
 
 
 # AUTH: Set DNAnexus authentication for tests
-def test_auth(auth_token):
-    """Test that an authentication token is passed to pytest as a command line argument"""
-    assert auth_token is not None
+def test_auth(auth_token_file):
+    """Test that an authentication token file is passed to pytest as a command line argument"""
+    assert auth_token_file is not None
 
 
 # FIXTURES: Define functions to use in downstream tests
@@ -34,13 +34,14 @@ class TestFolders:
         for runfolder in rfm.find_runfolders(min_age=0):
             print(runfolder.dx_project)
             print(rfm.check_fastqs(runfolder))
-            # assert all(
-            #     [
-            #         runfolder.dx_project,
-            #         rfm.check_fastqs(runfolder),
-            #         rfm.check_logfiles(runfolder, 6),
-            #     ]
-            # )
+            print(rfm.check_logfiles(runfolder, 6))
+            assert all(
+                [
+                    runfolder.dx_project,
+                    rfm.check_fastqs(runfolder),
+                    # rfm.check_logfiles(runfolder, 6),
+                ]
+            )
 
     def test_find_fastqs(self, data_test_runfolders):
         """Tests the correct number of fastqs are present in local and uploaded directories"""

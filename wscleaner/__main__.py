@@ -23,12 +23,6 @@ TIMESTAMP = str(f"{datetime.datetime.now():%Y%m%d_%H%M%S}")
 PROJECT_DIR = str(Path(__file__).absolute().parent.parent)  # Project working directory
 # Root of folder containing apps (2 levels up from this file)
 DOCUMENT_ROOT = "/".join(PROJECT_DIR.split("/")[:-2])
-RUNFOLDERS = "/media/data3/share"
-print(RUNFOLDERS)
-LOGDIR = os.path.join(RUNFOLDERS, "automate_demultiplexing_logfiles", "wscleaner_logs")
-LOGFILE = os.path.join(
-    LOGDIR, f"{TIMESTAMP}_wscleaner.log"
-)  # Path for the application logfile
 
 
 def git_tag() -> str:
@@ -75,6 +69,11 @@ def cli_parser():
         required=True,
     )
     parser.add_argument(
+        "--log_dir",
+        help="Directory to save log file to",
+        required=True,
+    )
+    parser.add_argument(
         "--min-age",
         help="The age (days) a runfolder must be to be deleted",
         type=int,
@@ -84,7 +83,7 @@ def cli_parser():
         "--logfile-count",
         help="The number of logfiles a runfolder must have in /Logfiles",
         type=int,
-        default=5,
+        default=6,
     )
     parser.add_argument(
         "--version",
@@ -95,9 +94,12 @@ def cli_parser():
     return parser.parse_args()
 
 
-version = git_tag()  # Get version from setup.py as version CLI response
+version = git_tag() 
 # Parse CLI arguments. Some arguments will exit the program intentionally. See docstring for detail.
 args = cli_parser()
+LOGFILE = os.path.join(
+    args.log_dir, f"{TIMESTAMP}_wscleaner.log"
+)  # Path for the application logfile
 
 # Setup logging for module. Submodules inherit log handlers and filters
 mokaguys_logger.log_setup(LOGFILE)
@@ -111,8 +113,8 @@ dxpy.set_security_context({"auth_token_type": "Bearer", "auth_token": auth_token
 
 # Set root directory and search it for runfolders
 # If dry-run CLI flag is given, no directories are deleted by the runfolder manager.
-RFM = RunFolderManager(RUNFOLDERS, dry_run=args.dry_run)
-logger.info(f"Runfolder directory {RUNFOLDERS}")
+RFM = RunFolderManager(args.runfolders_dir, dry_run=args.dry_run)
+logger.info(f"Runfolder directory {args.runfolders_dir}")
 logger.info(f"Identifying local runfolders to consider deleting")
 local_runfolders = RFM.find_runfolders(min_age=args.min_age)
 logger.debug(

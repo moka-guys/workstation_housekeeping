@@ -51,7 +51,7 @@ optional arguments:
 For example, if running in dry run mode:
 
 ```
-conda activate python3.10.6 && python3 -m wscleaner /media/data3/share --dry-run
+conda activate python3.10.6 && python3 -m wscleaner --dry-run --runfolders_dir $RUNFOLDERS_DIR --auth_token_file $AUTH_TOKEN_FILEPATH --log_dir $LOG_DIR
 ```
 
 ### Live mode
@@ -59,15 +59,18 @@ conda activate python3.10.6 && python3 -m wscleaner /media/data3/share --dry-run
 If running in production mode:
 
 ```
-conda activate python3.10.6 && python3 -m wscleaner /media/data3/share
+conda activate python3.10.6 && python3 -m wscleaner --runfolders_dir $RUNFOLDERS_DIR --auth_token_file $AUTH_TOKEN_FILEPATH --log_dir $LOG_DIR
 ```
 
 ## Test
 
+Tests should be run and all passing prior to any new release.
+
 ```bash
 # Run from the cloned repo directory after installation
 python3 -m pytest -v --auth_token_file=$FULL_PATH_TO_FILE_CONTAINING_AUTH_TOKEN
-mp.txt```
+mp.txt
+```
 
 ## License
 
