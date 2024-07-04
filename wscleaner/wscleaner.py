@@ -190,7 +190,7 @@ class DxProjectRunFolder:
             return project["id"]
         except dxpy.exceptions.DXSearchError:
             # Catch exception and raise none
-            self.logger.debug(f"0 or >1 DNAnexus projects found for {self.runfolder}")
+            self.logger.info(f"0 or >1 DNAnexus projects found for {self.runfolder}")
             return None
 
     def __bool__(self):

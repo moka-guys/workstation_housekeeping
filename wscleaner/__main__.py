@@ -8,6 +8,7 @@ Methods:
     main(): Process input directory or API keys
 """
 import os
+import re
 import subprocess
 from pathlib import Path
 import datetime
@@ -121,28 +122,29 @@ logger.info(
 )
 
 for runfolder in local_runfolders:
-    logger.info(f"Processing {runfolder.name}")
-    # Delete runfolder if it meets the backup criteria
-    # runfolder.dx_project is evaluated first as following criteria checks depend on it
-    if runfolder.dx_project:
-        fastqs_uploaded = RFM.check_fastqs(runfolder)
-        logfiles_uploaded = RFM.check_logfiles(runfolder, args.logfile_count)
-        upload_log_exists = RFM.upload_log_exists(runfolder)
-        if fastqs_uploaded and logfiles_uploaded:
-            RFM.delete(runfolder)
-        else:
-            if not fastqs_uploaded:
-                logger.warning(f"{runfolder.name} - FASTQ MISMATCH")
-            if not logfiles_uploaded:
-                logger.warning(f"{runfolder.name} - LOGFILE MISMATCH")
-            if not upload_log_exists:
-                logger.warning(f"{runfolder.name} - UPLOAD LOG MISSING")
+    if re.compile("^[0-9]{6}.*$").match(runfolder):  # Runfolders start with 6 digits
+        logger.info(f"Processing {runfolder.name}")
+        # Delete runfolder if it meets the backup criteria
+        # runfolder.dx_project is evaluated first as following criteria checks depend on it
+        if runfolder.dx_project:
+            fastqs_uploaded = RFM.check_fastqs(runfolder)
+            logfiles_uploaded = RFM.check_logfiles(runfolder, args.logfile_count)
+            upload_log_exists = RFM.upload_log_exists(runfolder)
+            if fastqs_uploaded and logfiles_uploaded:
+                RFM.delete(runfolder)
             else:
-                clean_upload_log = RFM.check_upload_log(runfolder)
-                if not clean_upload_log:
-                    logger.warning(f"{runfolder.name} - UPLOAD LOG CONTAINS ERRORS")
-    else:
-        logger.warning(f"{runfolder.name} - DX PROJECT MISMATCH")
+                if not fastqs_uploaded:
+                    logger.warning(f"{runfolder.name} - FASTQ MISMATCH")
+                if not logfiles_uploaded:
+                    logger.warning(f"{runfolder.name} - LOGFILE MISMATCH")
+                if not upload_log_exists:
+                    logger.warning(f"{runfolder.name} - UPLOAD LOG MISSING")
+                else:
+                    clean_upload_log = RFM.check_upload_log(runfolder)
+                    if not clean_upload_log:
+                        logger.warning(f"{runfolder.name} - UPLOAD LOG CONTAINS ERRORS")
+        else:
+            logger.warning(f"{runfolder.name} - DX PROJECT MISMATCH")
 
 # Record runfolders removed by this iteration
 logger.info(f"Runfolders deleted in this instance: {RFM.deleted}")
