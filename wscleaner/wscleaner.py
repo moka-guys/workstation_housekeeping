@@ -162,7 +162,7 @@ class DxProjectRunFolder:
         # without the first four characters
         uploaded_runfolder = dxpy.describe(self.id)["name"][4:]
         # Set logfile location in DNANexus project. This is expected in 'Logfiles/', a subdirectory of the uploaded runfolder
-        logfile_dir = str(Path("/", uploaded_runfolder, "Logfiles"))
+        logfile_dir = str(Path("/", uploaded_runfolder, "automated_scripts_logfiles"))
         logfile_list = dxpy.find_data_objects(
             project=self.id, folder=logfile_dir, classname="file"
         )
@@ -277,10 +277,13 @@ class RunFolderManager:
         Ensures all fastqs were uploaded.
         """
         dx_fastqs = runfolder.dx_project.find_fastqs()
+        # print(dx_fastqs)
         local_fastqs = runfolder.find_fastqs()
-        fastq_bool = all([fastq in dx_fastqs for fastq in local_fastqs])
-        self.logger.debug(f"{runfolder.name} FASTQ BOOL: {fastq_bool}")
-        return fastq_bool
+        print(local_fastqs)
+        # fastq_bool = all([fastq in dx_fastqs for fastq in local_fastqs])
+        # print(fastq_bool)
+        # self.logger.debug(f"{runfolder.name} FASTQ BOOL: {fastq_bool}")
+        # return fastq_bool
 
     def check_logfiles(self, runfolder, logfile_count):
         """Returns true if a runfolder's DNAnexus project contains X logfiles in the

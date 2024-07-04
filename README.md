@@ -34,7 +34,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --runfolders_dir      A directory containing runfolders to process
-  --auth AUTH           A text file containing the DNANexus authentication
+  --auth_token_file AUTH           A text file containing the DNANexus authentication
                         token
   --dry-run             Perform a dry run without deleting files
   --min-age MIN_AGE     The age (days) a runfolder must be to be deleted
@@ -66,8 +66,8 @@ conda activate python3.10.6 && python3 -m wscleaner /media/data3/share
 
 ```bash
 # Run from the cloned repo directory after installation
-pytest . --auth_token DNA_NEXUS_KEY
-```
+python3 -m pytest -v --auth_token_file=$FULL_PATH_TO_FILE_CONTAINING_AUTH_TOKEN
+mp.txt```
 
 ## License
 

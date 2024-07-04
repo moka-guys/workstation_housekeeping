@@ -8,6 +8,7 @@ Methods:
     main(): Process input directory or API keys
 """
 import os
+import subprocess
 from pathlib import Path
 import datetime
 import argparse
@@ -23,12 +24,31 @@ PROJECT_DIR = str(Path(__file__).absolute().parent.parent)  # Project working di
 # Root of folder containing apps (2 levels up from this file)
 DOCUMENT_ROOT = "/".join(PROJECT_DIR.split("/")[:-2])
 RUNFOLDERS = "/media/data3/share"
+print(RUNFOLDERS)
 LOGDIR = os.path.join(RUNFOLDERS, "automate_demultiplexing_logfiles", "wscleaner_logs")
 LOGFILE = os.path.join(
     LOGDIR, f"{TIMESTAMP}_wscleaner.log"
 )  # Path for the application logfile
-AUTH_FILE = os.path.join(DOCUMENT_ROOT, ".dnanexus_auth_token")
-print(LOGFILE)
+
+
+def git_tag() -> str:
+    """
+    Obtain the git tag of the current commit
+        :return (str):  Git tag
+    """
+    filepath = os.path.dirname(os.path.realpath(__file__))
+    cmd = f"git -C {filepath} describe --tags"
+
+    proc = subprocess.Popen(
+        [cmd],
+        stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        shell=True,
+    )
+    out, _ = proc.communicate()
+    #  Return standard out, removing any new line characters
+    return out.rstrip().decode("utf-8")
+
 
 def cli_parser():
     """Parses command line arguments.
@@ -38,11 +58,10 @@ def cli_parser():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--auth",
+        "--auth_token_file",
         help="A text file containing the DNANexus authentication token",
         type=str,
-        default=AUTH_FILE,
-        required=False,
+        required=True,
     )
     parser.add_argument(
         "--dry-run",
@@ -67,59 +86,56 @@ def cli_parser():
         type=int,
         default=5,
     )
-    # Get version from setup.py as version CLI response
-    version_number = pkg_resources.require("wscleaner")[0].version
     parser.add_argument(
         "--version",
         help="Print version",
         action="version",
-        version=f"wscleaner v{version_number}",
+        version=f"wscleaner v{version}",
     )
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
-def main():
-    # Parse CLI arguments. Some arguments will exit the program intentionally. See docstring for detail.
-    args = cli_parser()
+version = git_tag()  # Get version from setup.py as version CLI response
+# Parse CLI arguments. Some arguments will exit the program intentionally. See docstring for detail.
+args = cli_parser()
 
-    # Setup logging for module. Submodules inherit log handlers and filters
-    mokaguys_logger.log_setup(LOGFILE)
-    logger = logging.getLogger(__name__)
-    logger.info(f"START")
+# Setup logging for module. Submodules inherit log handlers and filters
+mokaguys_logger.log_setup(LOGFILE)
+logger = logging.getLogger(__name__)
+logger.info(f"START")
 
-    # Setup dxpy authentication token read from command line file.
-    with open(args.auth) as f:
-        auth_token = f.read().rstrip()
-    dxpy.set_security_context({"auth_token_type": "Bearer", "auth_token": auth_token})
+# Setup dxpy authentication token read from command line file.
+with open(args.auth_token_file) as f:
+    auth_token = f.read().rstrip()
+dxpy.set_security_context({"auth_token_type": "Bearer", "auth_token": auth_token})
 
-    # Set root directory and search it for runfolders
-    # If dry-run CLI flag is given, no directories are deleted by the runfolder manager.
-    RFM = RunFolderManager(RUNFOLDERS, dry_run=args.dry_run)
-    logger.info(f"Runfolder directory {RUNFOLDERS}")
-    logger.info(f"Identifying local runfolders to consider deleting")
-    local_runfolders = RFM.find_runfolders(min_age=args.min_age)
-    logger.debug(
-        f"Found local runfolders to consider deleting: {[rf.name for rf in local_runfolders]}"
-    )
+# Set root directory and search it for runfolders
+# If dry-run CLI flag is given, no directories are deleted by the runfolder manager.
+RFM = RunFolderManager(RUNFOLDERS, dry_run=args.dry_run)
+logger.info(f"Runfolder directory {RUNFOLDERS}")
+logger.info(f"Identifying local runfolders to consider deleting")
+local_runfolders = RFM.find_runfolders(min_age=args.min_age)
+logger.debug(
+    f"Found local runfolders to consider deleting: {[rf.name for rf in local_runfolders]}"
+)
 
-    for runfolder in local_runfolders:
-        logger.info(f"Processing {runfolder.name}")
-        # Delete runfolder if it meets the backup criteria
-        # runfolder.dx_project is evaluated first as following criteria checks depend on it
-        if runfolder.dx_project:
-            fastqs_uploaded = RFM.check_fastqs(runfolder)
-            logfiles_uploaded = RFM.check_logfiles(runfolder, args.logfile_count)
-            if fastqs_uploaded and logfiles_uploaded:
-                RFM.delete(runfolder)
-            elif not fastqs_uploaded:
-                logger.warning(f"{runfolder.name} - FASTQ MISMATCH")
-            elif not logfiles_uploaded:
-                logger.warning(f"{runfolder.name} - LOGFILE MISMATCH")
-        else:
-            logger.warning(f"{runfolder.name} - DX PROJECT MISMATCH")
+for runfolder in local_runfolders:
+    logger.info(f"Processing {runfolder.name}")
+    # Delete runfolder if it meets the backup criteria
+    # runfolder.dx_project is evaluated first as following criteria checks depend on it
+    if runfolder.dx_project:
+        fastqs_uploaded = RFM.check_fastqs(runfolder)
+        logfiles_uploaded = RFM.check_logfiles(runfolder, args.logfile_count)
+        if fastqs_uploaded and logfiles_uploaded:
+            RFM.delete(runfolder)
+        elif not fastqs_uploaded:
+            logger.warning(f"{runfolder.name} - FASTQ MISMATCH")
+        elif not logfiles_uploaded:
+            logger.warning(f"{runfolder.name} - LOGFILE MISMATCH")
+    else:
+        logger.warning(f"{runfolder.name} - DX PROJECT MISMATCH")
 
-    # Record runfolders removed by this iteration
-    logger.info(f"Runfolders deleted in this instance: {RFM.deleted}")
-    logger.info(f"END")
-    # END
+# Record runfolders removed by this iteration
+logger.info(f"Runfolders deleted in this instance: {RFM.deleted}")
+logger.info(f"END")
+# END
