@@ -1,14 +1,8 @@
 import pytest
-import dxpy
 from pathlib import Path
-import argparse
-import json
-import sys
 import shutil
 
-from pkg_resources import resource_filename
-from wscleaner.main import cli_parser
-from wscleaner.lib import RunFolderManager, RunFolder
+from wscleaner.wscleaner import RunFolderManager, RunFolder
 
 
 # AUTH: Set DNAnexus authentication for tests

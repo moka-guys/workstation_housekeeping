@@ -2,7 +2,6 @@
 
 Config for pytest.
 """
-
 import pytest
 import pathlib
 

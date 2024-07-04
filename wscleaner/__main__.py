@@ -15,7 +15,7 @@ import logging
 import pkg_resources
 import dxpy
 from wscleaner import mokaguys_logger
-from wscleaner.wscleaner import RunFolder, RunFolderManager
+from wscleaner.wscleaner import RunFolderManager
 
 # Timestamp used for naming log files with datetime
 TIMESTAMP = str(f"{datetime.datetime.now():%Y%m%d_%H%M%S}")
