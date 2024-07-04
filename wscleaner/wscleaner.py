@@ -8,6 +8,7 @@ Classes:
     DxProjectRunFolder: A DNAnexus project
     RunFolderManager: Contains methods for finding, checking and deleting runfolders in a root directory.
 """
+import re
 import logging
 import shutil
 import time
@@ -188,9 +189,9 @@ class DxProjectRunFolder:
             )
             self.logger.debug(f'{self.runfolder} DNAnexus project: {project["id"]}')
             return project["id"]
-        except dxpy.exceptions.DXSearchError:
+        except dxpy.exceptions.DXSearchError as error:
             # Catch exception and raise none
-            self.logger.info(f"0 or >1 DNAnexus projects found for {self.runfolder}")
+            self.logger.warning(f"DX PROJECT MISMATCH - 0 or >1 DNAnexus projects found for {self.runfolder}: {error}")
             return None
 
     def __bool__(self):
@@ -251,31 +252,31 @@ class RunFolderManager:
         directory_list.sort(key=lambda subdir: subdir.stat().st_mtime)
         # list all directories in the runfolder dir.
         for directory in directory_list:
-            rf = RunFolder(directory)
-            # skip any folders that do not have an RTAComplete.txt file
-            if not rf.RTA_complete_exists:
-                self.logger.debug(
-                    f"{rf.name} is not a runfolder, or sequencing has not yet finished."
-                )
-            else:
-                # catch TSO500 runfolders here (do not contain fastqs)
-                if (rf.age >= min_age) and (rf.TSO500_check()):
+            if re.compile("^[0-9]{6}.*$").match(directory.name):  # Runfolders start with 6 digits
+                rf = RunFolder(directory)
+                # skip any folders that do not have an RTAComplete.txt file
+                if not rf.RTA_complete_exists:
                     self.logger.debug(
-                        f"{rf.name} is a TSO500 runfolder and is >= {min_age} days old."
+                        f"{rf.name} is not a runfolder, or sequencing has not yet finished."
                     )
-                    runfolder_objects.append(rf)
-                # Criteria for runfolder: Older than or equal to min_age and contains fastq.gz files
-                elif (rf.age >= min_age) and (rf.find_fastqs(count=True) > 0):
-                    self.logger.debug(
-                        f"{rf.name} contains 1 or more fastq and is >= {min_age} days old."
-                    )
-                    runfolder_objects.append(rf)
-                # shouldn't get this far anymore - leave in just incase.
                 else:
-                    self.logger.debug(
-                        f"{rf.name} has 0 fastqs, is not a TSO runfolder or is < {min_age} days old."
-                    )
-
+                    # catch TSO500 runfolders here (do not contain fastqs)
+                    if (rf.age >= min_age) and (rf.TSO500_check()):
+                        self.logger.debug(
+                            f"{rf.name} is a TSO500 runfolder and is >= {min_age} days old."
+                        )
+                        runfolder_objects.append(rf)
+                    # Criteria for runfolder: Older than or equal to min_age and contains fastq.gz files
+                    elif (rf.age >= min_age) and (rf.find_fastqs(count=True) > 0):
+                        self.logger.debug(
+                            f"{rf.name} contains 1 or more fastq and is >= {min_age} days old."
+                        )
+                        runfolder_objects.append(rf)
+                    # shouldn't get this far anymore - leave in just incase.
+                    else:
+                        self.logger.debug(
+                            f"{rf.name} has 0 fastqs, is not a TSO runfolder or is < {min_age} days old."
+                        )
         return runfolder_objects
 
     def check_fastqs(self, runfolder):
