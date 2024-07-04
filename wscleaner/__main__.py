@@ -15,7 +15,7 @@ import logging
 import pkg_resources
 import dxpy
 from wscleaner import mokaguys_logger
-from wscleaner.lib import RunFolder, RunFolderManager
+from wscleaner.wscleaner import RunFolder, RunFolderManager
 
 # Timestamp used for naming log files with datetime
 TIMESTAMP = str(f"{datetime.datetime.now():%Y%m%d_%H%M%S}")
@@ -28,7 +28,7 @@ LOGFILE = os.path.join(
     LOGDIR, f"{TIMESTAMP}_wscleaner.log"
 )  # Path for the application logfile
 AUTH_FILE = os.path.join(DOCUMENT_ROOT, ".dnanexus_auth_token")
-
+print(LOGFILE)
 
 def cli_parser():
     """Parses command line arguments.
@@ -123,7 +123,3 @@ def main():
     logger.info(f"Runfolders deleted in this instance: {RFM.deleted}")
     logger.info(f"END")
     # END
-
-
-if __name__ == "__main__":
-    main()

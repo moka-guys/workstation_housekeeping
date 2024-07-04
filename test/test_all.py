@@ -7,7 +7,6 @@ import sys
 import shutil
 
 from pkg_resources import resource_filename
-from wscleaner.auth import SetKeyAction, dx_set_auth, CONFIG_FILE
 from wscleaner.main import cli_parser
 from wscleaner.lib import RunFolderManager, RunFolder
 
@@ -16,12 +15,6 @@ from wscleaner.lib import RunFolderManager, RunFolder
 def test_auth(auth_token):
     """Test that an authentication token is passed to pytest as a command line argument"""
     assert auth_token is not None
-
-
-@pytest.fixture(autouse=True)
-def set_auth(auth_token):
-    """Set the authenticatino token for all subsequent tests"""
-    dx_set_auth(auth_token)
 
 
 # FIXTURES: Define functions to use in downstream tests
@@ -39,29 +32,6 @@ def rfm_dry():
     test_path = Path(str(Path(__file__).parent), "data")
     rfm_dry = RunFolderManager(str(test_path), dry_run=True)
     return rfm_dry
-
-
-# TESTS
-class TestAuth:
-    def test_set_auth(self, auth_token):
-        """test that the authentication token is set correctly"""
-        authobj = dx_set_auth(auth_token)
-        assert dxpy.SECURITY_CONTEXT["auth_token"] == auth_token
-
-    def test_setkey(self, monkeypatch, auth_token):
-        """test that the --set-key command-line argument caches the authentication token"""
-        # Set setkey cli arguments
-        sys.argv = ["python", "wscleaner", "--set-key", auth_token]
-        # Mock Action object
-        # Parse args
-        with pytest.raises(SystemExit) as err:
-            args = cli_parser()
-        # Make assertions on created config file
-        fn = resource_filename("wscleaner", CONFIG_FILE)
-        with open(fn, "r") as f:
-            assert auth_token in f.read()
-        # Delete temp config
-        Path(fn).unlink()
 
 
 class TestFolders:
