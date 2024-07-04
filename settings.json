@@ -5,8 +5,7 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.envFile": "${workspaceFolder}/.venv",
-    "python.analysis.extraPaths": [
-    ],
+    "python.analysis.extraPaths": [],
     "editor.formatOnSaveMode": "file",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
