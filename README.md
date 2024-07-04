@@ -1,6 +1,10 @@
 ## Workstation Cleaner (wscleaner)
 
-Workstation Cleaner (wscleaner) deletes local directories that have been uploaded to the DNAnexus cloud storage service.
+The Viapath Genome Informatics team use a linux workstation to manage sequencing files. These files are uploaded to the DNAnexus service for storage, however clearing the workstation is time intensive. Workstation Cleaner (wscleaner) automates the deletion of local directories that have been uploaded to the DNAnexus cloud storage service.
+
+A RunFolderManager class will instatiate objects for local Runfolders, each of which has an associated DNA Nexus project object. The manager loops over the runfolders and deletes them if all checks pass.
+
+DNA Nexus projects are accessed with the dxpy module, a python wrapper for the DNA Nexus API.
 
 When executed, Runfolders in the input (root) directory are deleted based on the following criteria:
 
@@ -8,7 +12,7 @@ When executed, Runfolders in the input (root) directory are deleted based on the
 * All local FASTQ files are uploaded and in a 'closed' state
 * X logfiles are present in the DNA Nexus project /Logfiles directory (NB X can be added as a command line argument - default is 5)
 
-or if the run is identified as a TSO500 run, based on:
+OR if the run is identified as a TSO500 run, based on:
   * the bcl2fastq2_output.log file created by the automated scripts
   AND
   * Presence of `_TSO` in the human readable DNANexus project name
@@ -16,11 +20,8 @@ or if the run is identified as a TSO500 run, based on:
 A DNAnexus API key must be cached locally using the `--set-key` option. 
 
 ## Workstation Environment
-The directory `env/` in this repository contains conda environment scripts for the workstation. These remove conflicts in the PYTHONPATH environment variable by editing the variable when conda is activated. The conda documentation describes where to place these scripts under ['saving environment variables'](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#macos-and-linux).
 
-## Install
-As descibed above, on the workstation 2 environments exist - wscleaner and wscleaner_test (for development work).
-You need to activate these environment before installing with pip (as below).
+The directory `env/` in this repository contains conda environment scripts for the workstation. These remove conflicts in the PYTHONPATH environment variable by editing the variable when conda is activated. The conda documentation describes where to place these scripts under ['saving environment variables'](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#macos-and-linux).
 
 
 ```bash
