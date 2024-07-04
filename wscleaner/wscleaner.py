@@ -16,7 +16,7 @@ import os
 import dxpy
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("wscleaner")
 PROJECT_DIR = str(Path(__file__).absolute().parent.parent)  # Project working directory
 # Root of folder containing apps (2 levels up from this file)
 DOCUMENT_ROOT = "/".join(PROJECT_DIR.split("/")[:-2])
@@ -42,7 +42,7 @@ class RunFolder:
     """
 
     def __init__(self, path):
-        self.logger = logging.getLogger(__name__ + ".RunFolder")
+        self.logger = logging.getLogger("wscleaner.RunFolder")
         self.path = Path(path)
         self.RTA_complete_exists = os.path.isfile(
             os.path.join(self.path, "RTAComplete.txt")
@@ -135,7 +135,7 @@ class DxProjectRunFolder:
     """
 
     def __init__(self, runfolder_name):
-        self.logger = logging.getLogger(__name__ + ".DXProjectRunFolder")
+        self.logger = logging.getLogger("wscleaner.DXProjectRunFolder")
         self.runfolder = runfolder_name
         self.id = self.__dx_find_one_project()
 
@@ -216,6 +216,7 @@ class RunFolderManager:
         check_fastqs(): Returns true if a runfolder's fastq.gz files match those in it's DNAnexus project.
         check_logfiles(): Returns true if a runfolder's DNAnexus project contains 6 logfiles in the
             expected location
+        upload_log_exists(): Returns true if a runfolder's upload log exists
         check_upload_log(): Returns true if a runfolder's upload log contains no upload errors
         delete(): Delete the local runfolder from the root directory and append name to self.deleted.
     Raises:
@@ -223,7 +224,7 @@ class RunFolderManager:
     """
 
     def __init__(self, directory, dry_run=False):
-        self.logger = logging.getLogger(f"wscleaner.RunFolderManager")
+        self.logger = logging.getLogger("wscleaner.RunFolderManager")
         self.__validate(directory)
         self.runfolder_dir = Path(directory)
         self.__dry_run = dry_run
@@ -293,8 +294,8 @@ class RunFolderManager:
         return fastq_bool
 
     def check_logfiles(self, runfolder, logfile_count):
-        """Returns true if a runfolder's DNAnexus project contains X logfiles in the
-        expected location.
+        """Returns true if a runfolder's DNAnexus project contains logfile_count
+        logfiles in the expected location.
         logfile_count is defined in the --logfile-count argument provided (default = 5)
         """
         dx_logfiles = runfolder.dx_project.count_logfiles()
@@ -302,22 +303,29 @@ class RunFolderManager:
         self.logger.debug(f"{runfolder.name} LOGFILE BOOL: {logfile_bool}")
         return logfile_bool
 
+    def upload_log_exists(self, runfolder):
+        """Returns true if a runfolder's upload log file exists"""
+        upload_runfolder_logfile = os.path.join(
+            upload_runfolder_logdir, f"{runfolder.name}_upload_runfolder.log"
+        )
+        if os.path.exists(upload_runfolder_logfile):
+            return True
+        else:
+            self.logger.debug(f"{runfolder.name} upload log file does not exist")
+
     def check_upload_log(self, runfolder):
         """Returns true if a runfolder's upload log file contains no ERROR logs."""
         upload_log_bool = False
         upload_runfolder_logfile = os.path.join(
             upload_runfolder_logdir, f"{runfolder.name}_upload_runfolder.log"
         )
-        if os.path.exists(upload_runfolder_logfile):
-            with open(upload_runfolder_logfile, "r") as f:
-                log_contents = f.readlines()
-            if "- ERROR -" in log_contents:
-                self.logger.debug(f"{runfolder.name} upload log contains errors")
-                upload_log_bool = False
-            else:
-                upload_log_bool = True
+        with open(upload_runfolder_logfile, "r") as f:
+            log_contents = f.readlines()
+        if "- ERROR -" in log_contents:
+            self.logger.debug(f"{runfolder.name} upload log contains errors")
+            upload_log_bool = False
         else:
-            self.logger.debug(f"{runfolder.name} upload log file does not exist")
+            upload_log_bool = True
         self.logger.debug(f"{runfolder.name} UPLOAD LOG BOOL: {upload_log_bool}")
         return upload_log_bool
 

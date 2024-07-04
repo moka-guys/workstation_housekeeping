@@ -100,8 +100,10 @@ LOGFILE = os.path.join(
 
 # Setup logging for module. Submodules inherit log handlers and filters
 mokaguys_logger.log_setup(LOGFILE)
-logger = logging.getLogger(__name__)
-logger.info(f"START")
+logger = logging.getLogger()
+# Set the name of the root logger
+logger.name = 'wscleaner'
+logger.info("START")
 
 # Setup dxpy authentication token read from command line file.
 with open(args.auth_token_file) as f:
@@ -125,7 +127,7 @@ for runfolder in local_runfolders:
     if runfolder.dx_project:
         fastqs_uploaded = RFM.check_fastqs(runfolder)
         logfiles_uploaded = RFM.check_logfiles(runfolder, args.logfile_count)
-        clean_upload_log = RFM.check_upload_log(runfolder)
+        upload_log_exists = RFM.upload_log_exists(runfolder)
         if fastqs_uploaded and logfiles_uploaded:
             RFM.delete(runfolder)
         else:
@@ -133,8 +135,12 @@ for runfolder in local_runfolders:
                 logger.warning(f"{runfolder.name} - FASTQ MISMATCH")
             if not logfiles_uploaded:
                 logger.warning(f"{runfolder.name} - LOGFILE MISMATCH")
-            if not clean_upload_log:
-                logger.warning(f"{runfolder.name} - UPLOAD LOG CONTAINS ERRORS")
+            if not upload_log_exists:
+                logger.warning(f"{runfolder.name} - UPLOAD LOG MISSING")
+            else:
+                clean_upload_log = RFM.check_upload_log(runfolder)
+                if not clean_upload_log:
+                    logger.warning(f"{runfolder.name} - UPLOAD LOG CONTAINS ERRORS")
     else:
         logger.warning(f"{runfolder.name} - DX PROJECT MISMATCH")
 
