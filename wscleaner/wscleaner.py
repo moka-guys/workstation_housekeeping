@@ -13,11 +13,17 @@ import shutil
 import time
 from pathlib import Path
 import os
-
 import dxpy
 
 
 logger = logging.getLogger(__name__)
+PROJECT_DIR = str(Path(__file__).absolute().parent.parent)  # Project working directory
+# Root of folder containing apps (2 levels up from this file)
+DOCUMENT_ROOT = "/".join(PROJECT_DIR.split("/")[:-2])
+upload_runfolder_logdir = os.path.join(
+    DOCUMENT_ROOT,
+    "automate_demultiplexing_logfiles", "upload_runfolder_script_logfiles"
+)
 
 
 class RunFolder:
@@ -43,7 +49,6 @@ class RunFolder:
         self.name = self.path.name
         self.logger.debug(f"Initiating RunFolder instance for {self.name}")
         self.dx_project = DxProjectRunFolder(self.name)
-        print(self.dx_project)
 
     @property
     def age(self):
@@ -132,7 +137,6 @@ class DxProjectRunFolder:
         self.logger = logging.getLogger(__name__ + ".DXProjectRunFolder")
         self.runfolder = runfolder_name
         self.id = self.__dx_find_one_project()
-        print(self.id)
 
     def find_fastqs(self):
         """Returns a list of files in the DNAnexus project (self.id) with the fastq.gz extension"""
@@ -159,16 +163,12 @@ class DxProjectRunFolder:
         """Count logfiles in the DNAnexus project (self.id). Logfiles are in an expected location.
         Returns:
             logfile_count (int): A count of logfiles"""
-        # Set uploaded runfolder name. Runfolder is renamed upon upload to the DNANexus project
-        # without the first four characters
-        uploaded_runfolder = dxpy.describe(self.id)["name"][4:]
-        # Set logfile location in DNANexus project. This is expected in 'Logfiles/', a subdirectory of the uploaded runfolder
-        logfile_dir = str(Path("/", uploaded_runfolder, "automated_scripts_logfiles"))
+        # Set logfile location in DNANexus project. This is expected in 'automated_scripts_logfiles/', a subdirectory of the uploaded runfolder
+        logfile_dir = str(os.path.join("/", self.runfolder, "automated_scripts_logfiles"))
         logfile_list = dxpy.find_data_objects(
             project=self.id, folder=logfile_dir, classname="file"
         )
-        logfile_count = len(list(logfile_list))
-        return logfile_count
+        return len(list(logfile_list))
 
     def __dx_find_one_project(self):
         """Find a single DNAnexus project from the input runfolder name
@@ -213,15 +213,16 @@ class RunFolderManager:
         check_fastqs(): Returns true if a runfolder's fastq.gz files match those in it's DNAnexus project.
         check_logfiles(): Returns true if a runfolder's DNAnexus project contains 6 logfiles in the
             expected location
+        check_upload_log(): Returns true if a runfolder's upload log contains no upload errors
         delete(): Delete the local runfolder from the root directory and append name to self.deleted.
     Raises:
         __validate():ValueError: The directory passed to the class instance does not exist.
     """
 
     def __init__(self, directory, dry_run=False):
-        self.logger = logging.getLogger(__name__ + ".RunFolderManager")
+        self.logger = logging.getLogger(f"wscleaner.RunFolderManager")
         self.__validate(directory)
-        self.root = Path(directory)
+        self.runfolder_dir = Path(directory)
         self.__dry_run = dry_run
         self.deleted = []  # Delete runfolders appended here by self.deleted
 
@@ -243,7 +244,7 @@ class RunFolderManager:
         runfolder_objects = []
         # list all directories in the runfolder dir.
         for directory in [
-            directory for directory in self.root.iterdir() if directory.is_dir()
+            directory for directory in self.runfolder_dir.iterdir() if directory.is_dir()
         ]:
             rf = RunFolder(directory)
             # skip any folders that do not have an RTAComplete.txt file
@@ -279,19 +280,41 @@ class RunFolderManager:
         """
         dx_fastqs = runfolder.dx_project.find_fastqs()
         local_fastqs = runfolder.find_fastqs()
-        fastq_bool = all([fastq in dx_fastqs for fastq in local_fastqs])
-        self.logger.debug(f"{runfolder.name} FASTQ BOOL: {fastq_bool}")
+        fastq_bool = True
+        for fastq in local_fastqs:
+            if fastq not in dx_fastqs:
+                self.logger.debug(f"Fastq missing from DNAnexus project: {fastq}")
+                fastq_bool = False
+        self.logger.debug(f"{runfolder.name} FASTQ BOOL: {fastq_bool}")            
         return fastq_bool
 
     def check_logfiles(self, runfolder, logfile_count):
         """Returns true if a runfolder's DNAnexus project contains X logfiles in the
         expected location.
-        X is defined in the --logfile-count argument provided (default = 5)
+        logfile_count is defined in the --logfile-count argument provided (default = 5)
         """
         dx_logfiles = runfolder.dx_project.count_logfiles()
         logfile_bool = dx_logfiles == logfile_count
         self.logger.debug(f"{runfolder.name} LOGFILE BOOL: {logfile_bool}")
         return logfile_bool
+
+    def check_upload_log(self, runfolder):
+        """Returns true if a runfolder's upload log file contains no ERROR logs.
+        """
+        upload_log_bool = False
+        upload_runfolder_logfile = os.path.join(upload_runfolder_logdir, f"{runfolder.name}_upload_runfolder.log")
+        if os.path.exists(upload_runfolder_logfile):
+            with open(upload_runfolder_logfile, "r") as f:
+                log_contents = f.readlines()
+            if "- ERROR -" in log_contents:
+                self.logger.debug(f"{runfolder.name} upload log contains errors")
+                upload_log_bool = False
+            else:
+                upload_log_bool = True
+        else:
+            self.logger.debug(f"{runfolder.name} upload log file does not exist")
+        self.logger.debug(f"{runfolder.name} UPLOAD LOG BOOL: {upload_log_bool}")
+        return upload_log_bool
 
     def delete(self, runfolder):
         """Delete the local runfolder from the root directory and append name to self.deleted."""

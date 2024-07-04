@@ -11,7 +11,7 @@ import logging
 from logging.config import dictConfig
 
 
-def log_setup(logfile_name, syslog="/dev/log"):
+def log_setup(logfile_path, syslog="/dev/log"):
     """Setup application logging using python's standard library logging module
 
     Args:
@@ -40,7 +40,7 @@ def log_setup(logfile_name, syslog="/dev/log"):
                 "class": "logging.FileHandler",
                 "formatter": "log_formatter",
                 "level": logging.DEBUG,
-                "filename": logfile_name,
+                "filename": logfile_path,
             },
             "syslog_handler": {
                 "class": "logging.handlers.SysLogHandler",

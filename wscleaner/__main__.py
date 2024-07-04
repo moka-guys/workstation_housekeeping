@@ -21,9 +21,6 @@ from wscleaner.wscleaner import RunFolderManager
 # Timestamp used for naming log files with datetime
 TIMESTAMP = str(f"{datetime.datetime.now():%Y%m%d_%H%M%S}")
 PROJECT_DIR = str(Path(__file__).absolute().parent.parent)  # Project working directory
-# Root of folder containing apps (2 levels up from this file)
-DOCUMENT_ROOT = "/".join(PROJECT_DIR.split("/")[:-2])
-
 
 def git_tag() -> str:
     """
@@ -115,9 +112,9 @@ dxpy.set_security_context({"auth_token_type": "Bearer", "auth_token": auth_token
 # If dry-run CLI flag is given, no directories are deleted by the runfolder manager.
 RFM = RunFolderManager(args.runfolders_dir, dry_run=args.dry_run)
 logger.info(f"Runfolder directory {args.runfolders_dir}")
-logger.info(f"Identifying local runfolders to consider deleting")
+logger.info("Identifying local runfolders to consider deleting")
 local_runfolders = RFM.find_runfolders(min_age=args.min_age)
-logger.debug(
+logger.info(
     f"Found local runfolders to consider deleting: {[rf.name for rf in local_runfolders]}"
 )
 
@@ -128,16 +125,19 @@ for runfolder in local_runfolders:
     if runfolder.dx_project:
         fastqs_uploaded = RFM.check_fastqs(runfolder)
         logfiles_uploaded = RFM.check_logfiles(runfolder, args.logfile_count)
+        clean_upload_log = RFM.check_upload_log(runfolder)
         if fastqs_uploaded and logfiles_uploaded:
             RFM.delete(runfolder)
-        elif not fastqs_uploaded:
-            logger.warning(f"{runfolder.name} - FASTQ MISMATCH")
-        elif not logfiles_uploaded:
-            logger.warning(f"{runfolder.name} - LOGFILE MISMATCH")
+        else:
+            if not fastqs_uploaded:
+                logger.warning(f"{runfolder.name} - FASTQ MISMATCH")
+            if not logfiles_uploaded:
+                logger.warning(f"{runfolder.name} - LOGFILE MISMATCH")
+            if not clean_upload_log:
+                logger.warning(f"{runfolder.name} - UPLOAD LOG CONTAINS ERRORS")
     else:
         logger.warning(f"{runfolder.name} - DX PROJECT MISMATCH")
 
 # Record runfolders removed by this iteration
 logger.info(f"Runfolders deleted in this instance: {RFM.deleted}")
 logger.info(f"END")
-# END

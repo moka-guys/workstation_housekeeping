@@ -1,52 +1,58 @@
 import pytest
 from pathlib import Path
 import shutil
+import wscleaner.wscleaner as wscleaner
 
-from wscleaner.wscleaner import RunFolderManager, RunFolder
 
+test_data_dir = Path(str(Path(__file__).parent), "data")
 
 # AUTH: Set DNAnexus authentication for tests
 def test_auth(auth_token_file):
     """Test that an authentication token file is passed to pytest as a command line argument"""
     assert auth_token_file is not None
 
-
-# FIXTURES: Define functions to use in downstream tests
 @pytest.fixture
-def rfm():
-    """Return an instance of the runfolder manager with the test/data directory"""
-    test_path = Path(str(Path(__file__).parent), "data")
-    rfm = RunFolderManager(str(test_path))
-    return rfm
-
+def rfm(monkeypatch):
+    """Return an instance of the runfolder manager with the test/data directory
+    Monkeypatch is used to overwrite the upload runfolder logfile to the file created
+    in the conftest"""
+    monkeypatch.setattr(
+        wscleaner,
+        "upload_runfolder_logdir",
+        test_data_dir,
+    )
+    return wscleaner.RunFolderManager(str(test_data_dir))
 
 @pytest.fixture
-def rfm_dry():
-    """Return an instance of the runfolder manager with the test/data directory"""
-    test_path = Path(str(Path(__file__).parent), "data")
-    rfm_dry = RunFolderManager(str(test_path), dry_run=True)
-    return rfm_dry
+def rfm_dry(monkeypatch):
+    """Return an instance of the runfolder manager with the test/data directory
+    Monkeypatch is used to overwrite the upload runfolder logfile to the file created
+    in the conftest"""
+    monkeypatch.setattr(
+        wscleaner,
+        "upload_runfolder_logdir",
+        test_data_dir,
+    )
+    return wscleaner.RunFolderManager(str(test_data_dir), dry_run=True)
 
 
-class TestFolders:
-    def test_runfolders_ready(self, rfm):
+class TestRunFolder:
+    def test_runfolders_ready(self, data_test_runfolders, rfm):
         """Test that runfolders in the test directory pass checks for deletion. Est. 20 seconds."""
         for runfolder in rfm.find_runfolders(min_age=0):
-            print(runfolder.dx_project)
-            print(rfm.check_fastqs(runfolder))
-            print(rfm.check_logfiles(runfolder, 6))
             assert all(
                 [
                     runfolder.dx_project,
                     rfm.check_fastqs(runfolder),
-                    # rfm.check_logfiles(runfolder, 6),
+                    rfm.check_logfiles(runfolder, 6),
+                    rfm.check_upload_log(runfolder),
                 ]
             )
 
     def test_find_fastqs(self, data_test_runfolders):
         """Tests the correct number of fastqs are present in local and uploaded directories"""
         for runfolder_name, fastq_list_file in data_test_runfolders:
-            rf = RunFolder(Path("test/data", runfolder_name))
+            rf = wscleaner.RunFolder(Path("test/data", runfolder_name))
             with open(fastq_list_file) as f:
                 test_folder_fastqs = len(f.readlines())
             assert len(rf.find_fastqs()) == test_folder_fastqs
@@ -59,7 +65,11 @@ class TestFolders:
         assert all([rf.age > 10 for rf in runfolders])
 
 
-class TestRFM:
+# TODO add a class to test the DxProjectRunFolder class
+# class TestDxProjectRunFolder:
+
+
+class TestRunfolderManager:
     def test_find_runfolders(self, data_test_runfolders, rfm):
         """test the runfolder manager directory finding function"""
         rfm_runfolders = rfm.find_runfolders(min_age=0)
@@ -70,7 +80,7 @@ class TestRFM:
 
     def test_validate(self, rfm):
         """test the runfoldermanager _validate function correctly reads the path"""
-        assert rfm.root.name == Path(str(Path(__file__).parent), "data").name
+        assert rfm.runfolder_dir.name == Path(str(Path(__file__).parent), "data").name
 
     def test_delete(self, monkeypatch, rfm):
         """test that the runfolder manager delete call creates the log of deleted files.
