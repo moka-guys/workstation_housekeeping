@@ -6,10 +6,12 @@ import wscleaner.wscleaner as wscleaner
 
 test_data_dir = Path(str(Path(__file__).parent), "data")
 
+
 # AUTH: Set DNAnexus authentication for tests
 def test_auth(auth_token_file):
     """Test that an authentication token file is passed to pytest as a command line argument"""
     assert auth_token_file is not None
+
 
 @pytest.fixture
 def rfm(monkeypatch):
@@ -22,6 +24,7 @@ def rfm(monkeypatch):
         test_data_dir,
     )
     return wscleaner.RunFolderManager(str(test_data_dir))
+
 
 @pytest.fixture
 def rfm_dry(monkeypatch):

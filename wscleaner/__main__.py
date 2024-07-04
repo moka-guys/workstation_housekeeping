@@ -13,7 +13,6 @@ from pathlib import Path
 import datetime
 import argparse
 import logging
-import pkg_resources
 import dxpy
 from wscleaner import mokaguys_logger
 from wscleaner.wscleaner import RunFolderManager
@@ -21,6 +20,7 @@ from wscleaner.wscleaner import RunFolderManager
 # Timestamp used for naming log files with datetime
 TIMESTAMP = str(f"{datetime.datetime.now():%Y%m%d_%H%M%S}")
 PROJECT_DIR = str(Path(__file__).absolute().parent.parent)  # Project working directory
+
 
 def git_tag() -> str:
     """
@@ -91,7 +91,7 @@ def cli_parser():
     return parser.parse_args()
 
 
-version = git_tag() 
+version = git_tag()
 # Parse CLI arguments. Some arguments will exit the program intentionally. See docstring for detail.
 args = cli_parser()
 LOGFILE = os.path.join(

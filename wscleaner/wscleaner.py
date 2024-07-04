@@ -22,7 +22,8 @@ PROJECT_DIR = str(Path(__file__).absolute().parent.parent)  # Project working di
 DOCUMENT_ROOT = "/".join(PROJECT_DIR.split("/")[:-2])
 upload_runfolder_logdir = os.path.join(
     DOCUMENT_ROOT,
-    "automate_demultiplexing_logfiles", "upload_runfolder_script_logfiles"
+    "automate_demultiplexing_logfiles",
+    "upload_runfolder_script_logfiles",
 )
 
 
@@ -164,7 +165,9 @@ class DxProjectRunFolder:
         Returns:
             logfile_count (int): A count of logfiles"""
         # Set logfile location in DNANexus project. This is expected in 'automated_scripts_logfiles/', a subdirectory of the uploaded runfolder
-        logfile_dir = str(os.path.join("/", self.runfolder, "automated_scripts_logfiles"))
+        logfile_dir = str(
+            os.path.join("/", self.runfolder, "automated_scripts_logfiles")
+        )
         logfile_list = dxpy.find_data_objects(
             project=self.id, folder=logfile_dir, classname="file"
         )
@@ -244,7 +247,9 @@ class RunFolderManager:
         runfolder_objects = []
         # list all directories in the runfolder dir.
         for directory in [
-            directory for directory in self.runfolder_dir.iterdir() if directory.is_dir()
+            directory
+            for directory in self.runfolder_dir.iterdir()
+            if directory.is_dir()
         ]:
             rf = RunFolder(directory)
             # skip any folders that do not have an RTAComplete.txt file
@@ -285,7 +290,7 @@ class RunFolderManager:
             if fastq not in dx_fastqs:
                 self.logger.debug(f"Fastq missing from DNAnexus project: {fastq}")
                 fastq_bool = False
-        self.logger.debug(f"{runfolder.name} FASTQ BOOL: {fastq_bool}")            
+        self.logger.debug(f"{runfolder.name} FASTQ BOOL: {fastq_bool}")
         return fastq_bool
 
     def check_logfiles(self, runfolder, logfile_count):
@@ -299,10 +304,11 @@ class RunFolderManager:
         return logfile_bool
 
     def check_upload_log(self, runfolder):
-        """Returns true if a runfolder's upload log file contains no ERROR logs.
-        """
+        """Returns true if a runfolder's upload log file contains no ERROR logs."""
         upload_log_bool = False
-        upload_runfolder_logfile = os.path.join(upload_runfolder_logdir, f"{runfolder.name}_upload_runfolder.log")
+        upload_runfolder_logfile = os.path.join(
+            upload_runfolder_logdir, f"{runfolder.name}_upload_runfolder.log"
+        )
         if os.path.exists(upload_runfolder_logfile):
             with open(upload_runfolder_logfile, "r") as f:
                 log_contents = f.readlines()

@@ -12,6 +12,7 @@ from pathlib import Path
 PROJECT_DIR = str(Path(__file__).absolute().parent.parent)  # Project working directory
 DATA_DIR = os.path.join(PROJECT_DIR, "test/data/")
 
+
 def pytest_addoption(parser):
     """Add command line options to pytest"""
     parser.addoption(
@@ -70,13 +71,16 @@ def create_test_dirs(data_test_runfolders, auth_token_file, request, monkeypatch
         open(
             f"{runfolder_path}_upload_runfolder.log", "w"
         ).close()  # Create dummy upload runfolder log file
-        with open(auth_token_file) as f:  # Setup dxpy authentication token read from command line file
+        with open(
+            auth_token_file
+        ) as f:  # Setup dxpy authentication token read from command line file
             auth_token = f.read().rstrip()
-        dxpy.set_security_context({"auth_token_type": "Bearer", "auth_token": auth_token})
+        dxpy.set_security_context(
+            {"auth_token_type": "Bearer", "auth_token": auth_token}
+        )
 
     yield  # Where the testing happens
     # TEARDOWN - cleanup after each test
     for runfolder_name, fastq_list_file in data_test_runfolders:
         runfolder_path = os.path.join(PROJECT_DIR, f"test/data/{runfolder_name}")
         shutil.rmtree(runfolder_path)
-
