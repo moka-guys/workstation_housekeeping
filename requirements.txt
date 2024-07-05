@@ -4,5 +4,5 @@ dxpy==0.378.0
 psutil==6.0.0
 python-dateutil==2.9.0.post0
 six==1.16.0
-urllib3==2.1.0
+urllib3==2.2.2
 websocket-client==1.7.0
