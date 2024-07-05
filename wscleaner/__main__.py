@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """wscleaner
 
-Delete runfolders in a root directory on the condition that it has uploaded to DNA Nexus.
+Delete runfolders in a root directory on the condition that it has uploaded to DNAnexus.
 
 Methods:
     cli_parser(): Parses command line arguments
@@ -45,7 +45,6 @@ def cli_parser():
     """Parses command line arguments.
     Args: None. The argparse.ArgumentParser auto-collects arguments from sys.args
     Returns: Argument parser object with a 'root' attribute if root directory given.
-        Otherwise, --set-key and --print-key exit after actions are performed.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(

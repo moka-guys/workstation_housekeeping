@@ -87,8 +87,8 @@ class RunFolder:
         Checks if the run is a TSO500 run. These need to be cleaned up but do not contain fastqs
         Returns True if TSO run detected.
         """
-        logfile_check = False
         project_name = False
+        logfile_check = False
         bcl2fastq_filepath = os.path.join(self.path, "bcl2fastq2_output.log")
         # ensure not trying to open files that don't exist
         if os.path.isdir(self.path) and os.path.exists(bcl2fastq_filepath):
@@ -97,14 +97,14 @@ class RunFolder:
                 # take last line of the logfile - look for statement produced by automated scripts for TSO runs
                 if demultiplexing_file.readlines()[-1].startswith("TSO500 run."):
                     logfile_check = True
-                    self.logger.debug(
-                        f"bcl2fastq2_output.log for {self.name} contains the string expected for TSO500 runs"
+                    self.logger.info(
+                        f"{self.name} - bcl2fastq2_output.log contains the string expected for TSO500 runs"
                     )
                 else:
                     self.logger.debug(
-                        f"bcl2fastq2_output.log for {self.name} DOES NOT contain expected TSO500 string"
+                        f"{self.name} - bcl2fastq2_output.log DOES NOT contain expected TSO500 string"
                     )
-            # may be an issue identifying the DNAnexus project
+            # May be an issue identifying the DNAnexus project
             # get the dnanexus project name to assess if contains "_TSO"
             if self.dx_project.id:
                 nexus_project_name = dxpy.describe(self.dx_project.id)["name"]
