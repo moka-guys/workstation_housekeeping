@@ -1,2 +1,4 @@
 *.pyc
-wscleaner/wscleaner/config.json
+*.log
+.coverage
+.ini
